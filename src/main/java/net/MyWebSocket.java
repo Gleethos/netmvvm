@@ -25,9 +25,7 @@ public class MyWebSocket {
 
         var json = new JSONObject(message);
 
-        if ( !json.has("type") ) {
-            return;
-        }
+        if ( !json.has("type") ) return;
 
         String type = json.getString("type");
 
@@ -37,25 +35,31 @@ public class MyWebSocket {
             AbstractViewModel vm = SkinContext.instance().get(vmId);
             vmJson.put("type", "viewModel");
             vmJson.put("viewModel", vm.toJson());
+            vmJson.put("vmId", vmId);
             vm.bind( delegate -> {
                 try {
-                    session.getRemote().sendString(
-                        "{" +
-                                "\"type\":\"show\"," +
-                                "\"vmId\":\""+ vmId +"\"," +
-                                "\"propName\":\"" + delegate.current().id() + "\"," +
-                                "\"value\":\""+ delegate.current().get() +"\"" +
-                            "}"
-                    );
+                    JSONObject update = new JSONObject();
+                    update.put("type", "show");
+                    update.put("vmId", vmId);
+                    update.put("propName", delegate.current().id());
+                    update.put("value", delegate.current().get());
+                    String returnJson = update.toString();
+                    System.out.println("Sending property: " + returnJson);
+                    session.getRemote().sendString(returnJson);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             });
             // Send a message to the client that sent the message
+            System.out.println("Sending VM: " + vmJson.toString());
             session.getRemote().sendStringByFuture(vmJson.toString());
         }
         else if ( type.equals("act") ) {
-            System.out.println("act");
+            String vmId = json.getString("vmId");
+            String propName = json.getString("propName");
+            String value = json.getString("value");
+            AbstractViewModel vm = SkinContext.instance().get(vmId);
+            vm.getPropById(propName).act(value);
         }
 
     }

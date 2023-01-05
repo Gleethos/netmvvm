@@ -13,19 +13,21 @@
         const ws = new WebSocket('ws://localhost:8080/websocket');
         const bindings = {};
 
-        ws.onopen = () => { ws.send("{'type':'getVM','id':'app.UserRegistrationViewModel-0'}"); };
+        ws.onopen = () => { ws.send("{'type':'getVM','vmId':'app.UserRegistrationViewModel-0'}"); };
         ws.onmessage = (event) => {
             // We parse the data as json:
+            console.log("Received from server: " + event.data);
             const data = JSON.parse(event.data);
             loadVM(data);
         };
 
         function loadVM(data) {
+            console.log('From server' + JSON.stringify(data));
             // Now let's check the type: either a view model or a property change...
             if (data.type === 'viewModel') {
                 // We have a view model, so we can set it as the current view model:
-                viewModel = data.viewModel;
-                vmId = data.vmId;
+                const viewModel = data.viewModel;
+                const vmId = data.vmId;
                 console.log("Received view model: " + JSON.stringify(viewModel));
                 loadViewFor(
                     viewModel,
@@ -45,7 +47,6 @@
                 if ( binding )
                     binding(data.value);
             }
-            console.log('From server' + data);
         }
 
         function loadViewFor(
@@ -57,15 +58,36 @@
             var viewModelPrettyString = JSON.stringify(viewModelJson, null, 4);
             console.log("loadView... "+viewModelPrettyString);
             // Now let's load the view model into the view
-            var applicationContent = document.getElementById("application-content");
-            applicationContent.innerHTML = viewModelPrettyString;
+            const applicationContent = document.getElementById("application-content");
 
-            //vmSet("{'type':'act', 'action':'...'}");
-            //vmGet();
-            //vm.send('username', currentText)
-            //vm.receive('username', newText =>usernameInput.val = newText)
-            //vm.receive('feedback', newText =>feedbackDiv.text = newText)
-            //vm.receive('feedbackColor', newColor =>feedbackDiv.color = newColor)
+            // We attach a simple username password form with a terms of service checkbox
+            const username = document.createElement("input");
+            username.type = "text";
+            username.placeholder = "Username";
+            username.value = viewModelJson.username;
+            username.onchange = (event) => { vmSet("username", event.target.value); };
+            vmGet('username', txt => { username.value = txt; });
+            applicationContent.appendChild(username);
+
+            const password = document.createElement("input");
+            password.type = "password";
+            password.placeholder = "Password";
+            password.value = viewModelJson.password;
+            password.onchange = (event) => { vmSet("password", event.target.value); };
+            vmGet('password', txt => { password.value = txt; });
+            applicationContent.appendChild(password);
+
+            const termsOfService = document.createElement("input");
+            termsOfService.type = "checkbox";
+            termsOfService.checked = viewModelJson.termsOfService;
+            termsOfService.onchange = (event) => { vmSet("termsOfService", event.target.checked); };
+            vmGet('termsOfService', txt => { termsOfService.checked = txt; });
+
+            const feedback = document.createElement("div");
+            // We replace \n with br tags
+            feedback.innerHTML = viewModelJson.feedback.replace(/\\n/g, "<br>");
+            vmGet('feedback', txt => { feedback.innerHTML = txt.replace(/\n/g, "<br>"); });
+            applicationContent.appendChild(feedback);
         }
 
     </script>

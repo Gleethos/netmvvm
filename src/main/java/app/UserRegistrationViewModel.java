@@ -18,10 +18,10 @@ public class UserRegistrationViewModel extends AbstractViewModel
 
 
     public UserRegistrationViewModel() {
-        this.username          = Var.of("").withId("user").withAction( it -> validateAll() );
+        this.username          = Var.of("").withId("username").withAction( it -> validateAll() );
         this.password          = Var.of("").withId("password").withAction( it -> validateAll() );
         this.email             = Var.of("").withId("email").withAction( it -> validateAll() );
-        this.gender            = Var.of(Gender.NOT_SELECTED).withId("e").withAction( it -> validateAll() );
+        this.gender            = Var.of(Gender.NOT_SELECTED).withId("gender").withAction( it -> validateAll() );
         this.termsAccepted     = Var.of(false).withId("termsAccepted").withAction( it -> validateAll() );
         this.feedback          = Var.of("").withId("feedback");
         this.feedbackColor     = Var.of(Color.BLACK).withId("feedbackColor");
