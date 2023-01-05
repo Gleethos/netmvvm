@@ -1,0 +1,46 @@
+plugins {
+    id 'groovy'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+
+    implementation 'javax.websocket:javax.websocket-api:1.1'
+    implementation 'org.eclipse.jetty:jetty-servlet:9.4.29.v20200521'
+    implementation 'org.eclipse.jetty.websocket:websocket-server:9.4.50.v20221201'
+    implementation 'org.eclipse.jetty:jetty-server:9.4.29.v20200521'
+
+    implementation group: 'com.github.globaltcad', name: 'swing-tree', version:'6ab68e4'
+
+    implementation 'org.apache.groovy:groovy:4.0.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+
+
+    // Testing with Spock :
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'    // mandatory dependencies for using Spock
+
+    testImplementation 'org.codehaus.groovy:groovy:3.0.12'
+    testImplementation platform('org.spockframework:spock-bom:2.1-groovy-3.0')
+    testImplementation 'org.spockframework:spock-core:2.1-groovy-3.0'
+    testImplementation 'com.athaydes:spock-reports:2.3.2-groovy-3.0'
+
+    implementation 'com.formdev:flatlaf-intellij-themes:2.2'
+    implementation 'com.formdev:flatlaf:2.2' // Looks better than regular swing :)
+    implementation group: 'com.metsci.ext.com.kitfox.svg', name: 'svg-salamander', version: '0.1.19'
+
+    implementation group: 'org.json', name: 'json', version: '20220924'
+
+}
+
+test {
+    useJUnitPlatform()
+}

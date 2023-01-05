@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <div id = "application-content">
+
+    </div>
+</body>
+<script>
+        function loadViewFor(viewModelJson, server) {
+            // We turn the view model json into a pretty string
+            var viewModelPrettyString = JSON.stringify(JSON.parse(viewModelJson), null, 4);
+            console.log("loadView... "+viewModelPrettyString);
+            // Now let's load the view model into the view
+            var applicationContent = document.getElementById("application-content");
+            applicationContent.innerHTML = viewModelPrettyString;
+
+            server("{'type':'act', 'action':'...'}");
+        }
+        function applyPropertyChange(viewModelType) {
+            console.log("loadViewModel... "+viewModelType);
+        }
+
+        const ws = new WebSocket('ws://localhost:8080/websocket');
+
+        ws.onopen = () => { ws.send("{'type':'getVM','id':'app.UserRegistrationViewModel-0'}"); };
+        ws.onmessage = (event) => {
+            // We parse the data as json:
+            const data = JSON.parse(event.data);
+            // Now let's check the type: either a view model or a property change...
+            if (data.type === 'viewModel') {
+                // We have a view model, so we can set it as the current view model:
+                viewModel = data.viewModel;
+                id = data.id;
+                loadViewFor(viewModel, (action) => {
+                    ws.send("{'type':'act', 'id':'"+id+"', 'action':'+action+'}");
+                });
+            } else if (data.type === 'propertyChange') {
+                // We have a property change, so we can set the property:
+                applyPropertyChange(data.propertyChange);
+            }
+            console.log('From server' + event.data);
+        };
+
+    </script>
+</html>
