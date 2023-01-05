@@ -76,12 +76,23 @@
             password.onchange = (event) => { vmSet("password", event.target.value); };
             vmGet('password', txt => { password.value = txt; });
             applicationContent.appendChild(password);
+            // break:
+            applicationContent.appendChild(document.createElement("br"));
 
             const termsOfService = document.createElement("input");
             termsOfService.type = "checkbox";
             termsOfService.checked = viewModelJson.termsOfService;
-            termsOfService.onchange = (event) => { vmSet("termsOfService", event.target.checked); };
+            termsOfService.onchange = (event) => { vmSet("termsAccepted", event.target.checked); };
             vmGet('termsOfService', txt => { termsOfService.checked = txt; });
+            applicationContent.appendChild(termsOfService);
+
+            const termsOfServiceLabel = document.createElement("label");
+            termsOfServiceLabel.innerHTML = "I agree to the terms of service";
+            applicationContent.appendChild(termsOfServiceLabel);
+
+            // break:
+            applicationContent.appendChild(document.createElement("br"));
+            applicationContent.appendChild(document.createElement("br"));
 
             const feedback = document.createElement("div");
             // We replace \n with br tags
