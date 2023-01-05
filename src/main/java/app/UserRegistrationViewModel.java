@@ -21,11 +21,11 @@ public class UserRegistrationViewModel extends AbstractViewModel
         this.username          = Var.of("").withId("user").withAction( it -> validateAll() );
         this.password          = Var.of("").withId("password").withAction( it -> validateAll() );
         this.email             = Var.of("").withId("email").withAction( it -> validateAll() );
-        this.feedback          = Var.of("").withId("feedback").withAction( it -> validateAll() );
-        this.feedbackColor     = Var.of(Color.BLACK).withId("feedbackColor").withAction( it -> validateAll() );
         this.gender            = Var.of(Gender.NOT_SELECTED).withId("e").withAction( it -> validateAll() );
         this.termsAccepted     = Var.of(false).withId("termsAccepted").withAction( it -> validateAll() );
-        this.allInputsDisabled = Var.of(false).withId("allInputsDisabled").withAction( it -> validateAll() );
+        this.feedback          = Var.of("").withId("feedback");
+        this.feedbackColor     = Var.of(Color.BLACK).withId("feedbackColor");
+        this.allInputsDisabled = Var.of(false).withId("allInputsDisabled");
         validateAll();
     }
 

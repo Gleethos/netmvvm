@@ -32,14 +32,21 @@ public class MyWebSocket {
         String type = json.getString("type");
 
         if ( type.equals("getVM") ) {
-            String id = json.getString("id");
+            String vmId = json.getString("vmId");
             JSONObject vmJson = new JSONObject();
-            AbstractViewModel vm = SkinContext.instance().get(id);
+            AbstractViewModel vm = SkinContext.instance().get(vmId);
             vmJson.put("type", "viewModel");
             vmJson.put("viewModel", vm.toJson());
-            vm.bind( propertyChange -> {
+            vm.bind( delegate -> {
                 try {
-                    session.getRemote().sendString("{\"type\":\"propertyChange\",\"propertyChange\":"+propertyChange+"}");
+                    session.getRemote().sendString(
+                        "{" +
+                                "\"type\":\"show\"," +
+                                "\"vmId\":\""+ vmId +"\"," +
+                                "\"propName\":\"" + delegate.current().id() + "\"," +
+                                "\"value\":\""+ delegate.current().get() +"\"" +
+                            "}"
+                    );
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

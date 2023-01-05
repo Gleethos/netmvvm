@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import org.json.JSONObject;
+import swingtree.api.mvvm.ValDelegate;
+
 /**
  *  Uses reflection to iterate over all of its field variables
  *  and then converts {@link swingtree.api.mvvm.Val} and {@link swingtree.api.mvvm.Var}
@@ -56,11 +58,11 @@ public class AbstractViewModel
         return asString;
     }
 
-    public void bind(Consumer<String> observer) {
+    public void bind(Consumer<ValDelegate<Object>> observer) {
         var properties = findProperties();
         for (var property : properties) {
             property.onShowThis( it -> {
-                observer.accept(it.current().id()+":"+it.current().get());
+                observer.accept(it);
             });
         }
     }
