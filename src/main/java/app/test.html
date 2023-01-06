@@ -10,10 +10,29 @@
     </div>
 </body>
 <script>
+        const EVENT_TYPE = "EventType";
+        const EVENT_PAYLOAD = "EventPayload";
+
+        // Event Type Values:
+        const SET_PROP = "act";
+        const RETURN_PROP = "show";
+        const GET_VM = "getVM";
+        const RETURN_GET_VM = "viewModel";
+
+        // View model properties:
+        const VM_ID = "vmId";
+
+        // Property properties:
+        const PROP_NAME = "propName";
+        const PROP_VALUE = "value";
+        const PROP_TYPE = "type";
+        const PROP_TYPE_NAME = "name";
+        const PROP_TYPE_STATES = "states";
+
         const ws = new WebSocket('ws://localhost:8080/websocket');
         const bindings = {};
 
-        ws.onopen = () => { ws.send("{'EventType':'getVM','vmId':'app.UserRegistrationViewModel-0'}"); };
+        ws.onopen = () => { ws.send("{'"+EVENT_TYPE+"':'"+GET_VM+"','"+VM_ID+"':'app.UserRegistrationViewModel-0'}"); };
         ws.onmessage = (event) => {
             // We parse the data as json:
             console.log("Received from server: " + event.data);
@@ -24,7 +43,7 @@
         function loadVM(data) {
             console.log('From server' + JSON.stringify(data));
             // Now let's check the EventType: either a view model or a property change...
-            if (data.EventType === 'viewModel') {
+            if (data[EVENT_TYPE] === RETURN_GET_VM) {
                 // We have a view model, so we can set it as the current view model:
                 const viewModel = data.viewModel;
                 const vmId = data.vmId;
@@ -33,16 +52,21 @@
                     viewModel,
                     (propName, value) => {
                         ws.send(
-                            "{'EventType':'act', 'vmId':'"+vmId+"', 'propName':'"+propName+"', 'value':'"+value+"'}"
+                            "{" +
+                                "'"+EVENT_TYPE+"':'"+SET_PROP+"', " +
+                                "'"+VM_ID+"':'"+vmId+"', " +
+                                "'"+PROP_NAME+"':'"+propName+"', " +
+                                "'"+PROP_VALUE+"':'"+value+"'" +
+                            "}"
                         );
                     },
                     (propName, action) => {
                         bindings[vmId+":"+propName] = action;
                     }
                 );
-            } else if ( data.EventType === 'show' ) {
+            } else if ( data[EVENT_TYPE] === RETURN_PROP ) {
                 // We look up the binding for the property change:
-                const binding = bindings[data.vmId+":"+data.propName];
+                const binding = bindings[data[VM_ID]+":"+data[PROP_NAME]];
                 // If we have a binding, we call it with the new value:
                 if ( binding )
                     binding(data.value);
@@ -64,7 +88,7 @@
             const username = document.createElement("input");
             username.type = "text";
             username.placeholder = "Username";
-            username.value = viewModelJson.username;
+            username.value = viewModelJson.username.value;
             username.onchange = (event) => { vmSet("username", event.target.value); };
             vmGet('username', txt => { username.value = txt; });
             applicationContent.appendChild(username);
@@ -72,7 +96,7 @@
             const password = document.createElement("input");
             password.type = "password";
             password.placeholder = "Password";
-            password.value = viewModelJson.password;
+            password.value = viewModelJson.password.value;
             password.onchange = (event) => { vmSet("password", event.target.value); };
             vmGet('password', txt => { password.value = txt; });
             applicationContent.appendChild(password);
@@ -81,7 +105,7 @@
 
             const termsOfService = document.createElement("input");
             termsOfService.type = "checkbox";
-            termsOfService.checked = viewModelJson.termsOfService;
+            termsOfService.checked = viewModelJson.termsAccepted.value;
             termsOfService.onchange = (event) => { vmSet("termsAccepted", event.target.checked); };
             vmGet('termsOfService', txt => { termsOfService.checked = txt; });
             applicationContent.appendChild(termsOfService);
@@ -96,7 +120,7 @@
 
             const feedback = document.createElement("div");
             // We replace \n with br tags
-            feedback.innerHTML = viewModelJson.feedback.replace(/\\n/g, "<br>");
+            feedback.innerHTML = viewModelJson.feedback.value.replace(/\\n/g, "<br>");
             vmGet('feedback', txt => { feedback.innerHTML = txt.replace(/\n/g, "<br>"); });
             applicationContent.appendChild(feedback);
         }

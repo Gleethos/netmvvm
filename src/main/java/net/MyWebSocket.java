@@ -40,7 +40,7 @@ public class MyWebSocket {
                 e.printStackTrace();
             }
         }
-        else if ( type.equals(Constants.ACT) ) {
+        else if ( type.equals(Constants.SET_PROP) ) {
             try {
                 applyMutationToVM(json);
             } catch (Exception e) {
@@ -54,16 +54,16 @@ public class MyWebSocket {
         String vmId = json.getString(Constants.VM_ID);
         JSONObject vmJson = new JSONObject();
         AbstractViewModel vm = SkinContext.instance().get(vmId);
-        vmJson.put(Constants.EVENT_TYPE, Constants.VIEW_MODEL);
-        vmJson.put(Constants.VIEW_MODEL, vm.toJson());
+        vmJson.put(Constants.EVENT_TYPE, Constants.RETURN_GET_VM);
+        vmJson.put(Constants.RETURN_GET_VM, vm.toJson());
         vmJson.put(Constants.VM_ID, vmId);
         vm.bind( delegate -> {
             try {
                 JSONObject update = new JSONObject();
-                update.put(Constants.EVENT_TYPE, Constants.SHOW);
+                update.put(Constants.EVENT_TYPE, Constants.RETURN_PROP);
                 update.put(Constants.VM_ID, vmId);
                 update.put(Constants.PROP_NAME, delegate.current().id());
-                update.put(Constants.VALUE, delegate.current().get());
+                update.put(Constants.PROP_VALUE, delegate.current().get());
                 String returnJson = update.toString();
                 System.out.println("Sending property: " + returnJson);
                 session.getRemote().sendString(returnJson);
@@ -79,7 +79,7 @@ public class MyWebSocket {
     private void applyMutationToVM(JSONObject json) {
         String vmId     = json.getString(Constants.VM_ID);
         String propName = json.getString(Constants.PROP_NAME);
-        String value    = json.getString(Constants.VALUE);
+        String value    = json.getString(Constants.PROP_VALUE);
         AbstractViewModel vm = SkinContext.instance().get(vmId);
         vm.applyToPropertyById(propName, value);
     }

@@ -2,6 +2,7 @@ package app;
 
 import binding.SkinContext;
 import binding.VMID;
+import net.JsonUtil;
 import swingtree.api.mvvm.Val;
 
 import java.util.List;
@@ -49,17 +50,9 @@ public class AbstractViewModel
     public JSONObject toJson() {
         JSONObject json = new JSONObject();
         for ( var property : findProperties() )
-            json.put(property.id(), escapeForJson(property.get()));
+            json.put(property.id(), JsonUtil.fromProperty(property));
 
         return json;
-    }
-
-    private String escapeForJson( Object value ) {
-        String asString = String.valueOf(value);
-        asString = asString.replace("\"", "\\\"");
-        asString = asString.replace("\r", "\\r");
-        asString = asString.replace("\n", "\\n");
-        return asString;
     }
 
     public void bind( Consumer<ValDelegate<Object>> observer ) {
