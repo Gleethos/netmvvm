@@ -1,7 +1,9 @@
 package net;
 
+import app.AbstractViewModel;
 import org.json.JSONObject;
 import swingtree.api.mvvm.Val;
+import swingtree.api.mvvm.Viewable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +34,9 @@ public class JsonUtil {
 
 
     private static Object escapeForJson(Val<?> prop) {
+
+        if ( prop.isEmpty() ) return null;
+
         if ( prop.type() == Boolean.class )
             return prop.get();
         else if ( prop.type() == Integer.class )
@@ -40,6 +45,13 @@ public class JsonUtil {
             return prop.get();
         else if ( prop.type() == Enum.class )
             return ((Enum)prop.get()).name();
+        else if (Viewable.class.isAssignableFrom(prop.type())) {
+            Viewable viewable = (Viewable) prop.get();
+            if ( viewable instanceof AbstractViewModel vm )
+                return vm.vmid().toString();
+            else
+                return String.valueOf(viewable);
+        }
 
         Object value = prop.get();
         String asString = String.valueOf(value);

@@ -27,6 +27,10 @@ public class AbstractViewModel
         _vmid = SkinContext.instance().put(this);
     }
 
+    public VMID<?> vmid() {
+        return _vmid;
+    }
+
     /**
      *  Uses reflection to find all the properties of the given view model.
      * @return a list of property instances.
