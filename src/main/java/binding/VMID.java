@@ -8,4 +8,9 @@ public record VMID<T extends AbstractViewModel>(Class<T> type, int id) {
             throw new IllegalArgumentException("type");
         }
     }
+
+    @Override
+    public String toString() {
+        return type.getName() + "-" + id;
+    }
 }

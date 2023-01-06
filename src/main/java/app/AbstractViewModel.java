@@ -2,6 +2,7 @@ package app;
 
 import binding.SkinContext;
 import binding.VMID;
+import net.Constants;
 import net.JsonUtil;
 import swingtree.api.mvvm.Val;
 
@@ -52,7 +53,11 @@ public class AbstractViewModel
         for ( var property : findProperties() )
             json.put(property.id(), JsonUtil.fromProperty(property));
 
-        return json;
+        JSONObject result = new JSONObject();
+        result.put(Constants.PROPS, json);
+        result.put(Constants.VM_ID, _vmid.toString());
+
+        return result;
     }
 
     public void bind( Consumer<ValDelegate<Object>> observer ) {

@@ -20,7 +20,7 @@ public class JsonUtil {
 
         JSONObject json = new JSONObject();
         json.put(Constants.PROP_NAME, property.id());
-        json.put(Constants.PROP_VALUE, escapeForJson(property.get()));
+        json.put(Constants.PROP_VALUE, escapeForJson(property));
         json.put(Constants.PROP_TYPE,
             new JSONObject()
             .put(Constants.PROP_TYPE_NAME, type.getName())
@@ -31,7 +31,17 @@ public class JsonUtil {
     }
 
 
-    private static String escapeForJson(Object value) {
+    private static Object escapeForJson(Val<?> prop) {
+        if ( prop.type() == Boolean.class )
+            return prop.get();
+        else if ( prop.type() == Integer.class )
+            return prop.get();
+        else if ( prop.type() == Double.class )
+            return prop.get();
+        else if ( prop.type() == Enum.class )
+            return ((Enum)prop.get()).name();
+
+        Object value = prop.get();
         String asString = String.valueOf(value);
         asString = asString.replace("\"", "\\\"");
         asString = asString.replace("\r", "\\r");

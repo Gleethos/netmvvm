@@ -55,15 +55,15 @@ public class MyWebSocket {
         JSONObject vmJson = new JSONObject();
         AbstractViewModel vm = SkinContext.instance().get(vmId);
         vmJson.put(Constants.EVENT_TYPE, Constants.RETURN_GET_VM);
-        vmJson.put(Constants.RETURN_GET_VM, vm.toJson());
-        vmJson.put(Constants.VM_ID, vmId);
+        vmJson.put(Constants.EVENT_PAYLOAD, vm.toJson());
         vm.bind( delegate -> {
             try {
                 JSONObject update = new JSONObject();
                 update.put(Constants.EVENT_TYPE, Constants.RETURN_PROP);
-                update.put(Constants.VM_ID, vmId);
-                update.put(Constants.PROP_NAME, delegate.current().id());
-                update.put(Constants.PROP_VALUE, delegate.current().get());
+                update.put(Constants.EVENT_PAYLOAD,
+                    JsonUtil.fromProperty(delegate.getCurrent())
+                    .put(Constants.VM_ID, vmId)
+                );
                 String returnJson = update.toString();
                 System.out.println("Sending property: " + returnJson);
                 session.getRemote().sendString(returnJson);
