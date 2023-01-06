@@ -1,5 +1,6 @@
 package app;
 
+import swingtree.api.mvvm.Val;
 import swingtree.api.mvvm.Var;
 
 import java.awt.*;
@@ -18,11 +19,11 @@ public class UserRegistrationViewModel extends AbstractViewModel
 
 
     public UserRegistrationViewModel() {
-        this.username          = Var.of("").withId("username").withAction( it -> validateAll() );
-        this.password          = Var.of("").withId("password").withAction( it -> validateAll() );
-        this.email             = Var.of("").withId("email").withAction( it -> validateAll() );
-        this.gender            = Var.of(Gender.NOT_SELECTED).withId("gender").withAction( it -> validateAll() );
-        this.termsAccepted     = Var.of(false).withId("termsAccepted").withAction( it -> validateAll() );
+        this.username          = Var.of("").withId("username").onAct( it -> validateAll() );
+        this.password          = Var.of("").withId("password").onAct( it -> validateAll() );
+        this.email             = Var.of("").withId("email").onAct( it -> validateAll() );
+        this.gender            = Var.of(Gender.NOT_SELECTED).withId("gender").onAct( it -> validateAll() );
+        this.termsAccepted     = Var.of(false).withId("termsAccepted").onAct( it -> validateAll() );
         this.feedback          = Var.of("").withId("feedback");
         this.feedbackColor     = Var.of(Color.BLACK).withId("feedbackColor");
         this.allInputsDisabled = Var.of(false).withId("allInputsDisabled");
@@ -36,15 +37,15 @@ public class UserRegistrationViewModel extends AbstractViewModel
     
     public Var<String> email() { return email; }
     
-    public Var<String> feedback() { return feedback; }
+    public Val<String> feedback() { return feedback; }
     
-    public Var<Color> feedbackColor() { return feedbackColor; }
+    public Val<Color> feedbackColor() { return feedbackColor; }
     
     public Var<Gender> gender() { return gender; }
     
     public Var<Boolean> termsAccepted() { return termsAccepted; }
     
-    public Var<Boolean> allInputsDisabled() { return allInputsDisabled; }
+    public Val<Boolean> allInputsDisabled() { return allInputsDisabled; }
     
     private String validatePassword() {
         if ( password.get().length() < 8 )

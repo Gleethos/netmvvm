@@ -19,7 +19,7 @@ dependencies {
     implementation 'org.eclipse.jetty.websocket:websocket-server:9.4.50.v20221201'
     implementation 'org.eclipse.jetty:jetty-server:9.4.29.v20200521'
 
-    implementation group: 'com.github.globaltcad', name: 'swing-tree', version:'6ab68e4'
+    implementation group: 'com.github.globaltcad', name: 'swing-tree', version:'beecc48'
 
     implementation 'org.apache.groovy:groovy:4.0.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
@@ -40,6 +40,13 @@ dependencies {
     implementation group: 'com.metsci.ext.com.kitfox.svg', name: 'svg-salamander', version: '0.1.19'
 
     implementation group: 'org.json', name: 'json', version: '20220924'
+
+    // Logging :
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.36'
+
+    // if you don't already have slf4j-api and an implementation of it in the classpath, add this! (needed for reports)
+    testImplementation 'org.slf4j:slf4j-api:1.7.30'
+    testRuntimeClasspath 'org.slf4j:slf4j-simple:1.7.30'
 
 }
 

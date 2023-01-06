@@ -13,7 +13,7 @@
         const ws = new WebSocket('ws://localhost:8080/websocket');
         const bindings = {};
 
-        ws.onopen = () => { ws.send("{'type':'getVM','vmId':'app.UserRegistrationViewModel-0'}"); };
+        ws.onopen = () => { ws.send("{'EventType':'getVM','vmId':'app.UserRegistrationViewModel-0'}"); };
         ws.onmessage = (event) => {
             // We parse the data as json:
             console.log("Received from server: " + event.data);
@@ -23,8 +23,8 @@
 
         function loadVM(data) {
             console.log('From server' + JSON.stringify(data));
-            // Now let's check the type: either a view model or a property change...
-            if (data.type === 'viewModel') {
+            // Now let's check the EventType: either a view model or a property change...
+            if (data.EventType === 'viewModel') {
                 // We have a view model, so we can set it as the current view model:
                 const viewModel = data.viewModel;
                 const vmId = data.vmId;
@@ -33,14 +33,14 @@
                     viewModel,
                     (propName, value) => {
                         ws.send(
-                            "{'type':'act', 'vmId':'"+vmId+"', 'propName':'"+propName+"', 'value':'"+value+"'}"
+                            "{'EventType':'act', 'vmId':'"+vmId+"', 'propName':'"+propName+"', 'value':'"+value+"'}"
                         );
                     },
                     (propName, action) => {
                         bindings[vmId+":"+propName] = action;
                     }
                 );
-            } else if ( data.type === 'show' ) {
+            } else if ( data.EventType === 'show' ) {
                 // We look up the binding for the property change:
                 const binding = bindings[data.vmId+":"+data.propName];
                 // If we have a binding, we call it with the new value:
@@ -55,7 +55,7 @@
             vmGet
         ) {
             // We turn the view model json into a pretty string
-            var viewModelPrettyString = JSON.stringify(viewModelJson, null, 4);
+            const viewModelPrettyString = JSON.stringify(viewModelJson, null, 4);
             console.log("loadView... "+viewModelPrettyString);
             // Now let's load the view model into the view
             const applicationContent = document.getElementById("application-content");
