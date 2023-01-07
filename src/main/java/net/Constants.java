@@ -10,11 +10,18 @@ public class Constants {
     public static String RETURN_PROP = "show";
     public static String GET_VM = "getVM";
     public static String RETURN_GET_VM = "viewModel";
+    public static String CALL          = "call";
+    public static String CALL_RETURN   = "callReturn";
 
 
     // View model properties:
     public static String VM_ID = "vmId";
     public static String PROPS = "props";
+    public static String METHOD_NAME = "name";
+    public static String METHOD_ARG_NAME = "name";
+    public static String METHOD_ARG_TYPE = "type";
+    public static String METHOD_ARGS = "args";
+    public static String METHOD_RETURNS = "returns";
 
 
     // Property properties:

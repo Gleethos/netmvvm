@@ -4,9 +4,11 @@ import binding.SkinContext;
 import binding.VMID;
 import net.Constants;
 import net.JsonUtil;
+import org.json.JSONArray;
 import swingtree.api.UIAction;
 import swingtree.api.mvvm.Val;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -62,8 +64,106 @@ public class AbstractViewModel
         JSONObject result = new JSONObject();
         result.put(Constants.PROPS, json);
         result.put(Constants.VM_ID, _vmid.toString());
-
+        result.put("methods", _getMethods());
         return result;
+    }
+
+    private JSONArray _getMethods() {
+        var publicMethods = new JSONArray();
+        /*
+            So lets say we have a class like this:
+            class Foo extends AbstractViewModel {
+                public long bar(int xy) { ... }
+            }
+            We want to extract the method signature into the json
+            using reflection!
+            Each entry should look something like this:
+            {
+                "name":"bar",
+                "args":[{"name":"xy", "type":"int"}]
+                "returns": "long"
+            }
+        */
+
+        for (var method : this.getClass().getDeclaredMethods()) {
+            method.setAccessible(true);
+            // first we check if the method is public
+            if ( !java.lang.reflect.Modifier.isPublic(method.getModifiers()) )
+                continue;
+
+            try {
+                String returnType = method.getReturnType().getSimpleName();
+                String methodName = method.getName();
+                var args = new JSONObject();
+                for ( var param : method.getParameters() )
+                    args.put(Constants.METHOD_ARG_NAME, param.getName())
+                        .put(Constants.METHOD_ARG_TYPE, param.getType().getSimpleName());
+
+                publicMethods.put(
+                        new JSONObject()
+                            .put(Constants.METHOD_NAME, methodName)
+                            .put(Constants.METHOD_ARGS, args)
+                            .put(Constants.METHOD_RETURNS, returnType)
+                    );
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return publicMethods;
+    }
+
+    public JSONObject call(JSONObject callRequest) {
+        /*
+            The call request should look like this:
+            {
+                "method":"bar",
+                "args":[{"name":"xy", "value": 5}]
+            }
+        */
+        String methodName = callRequest.getString(Constants.METHOD_NAME);
+        var args = callRequest.getJSONArray(Constants.METHOD_ARGS);
+        var methodArgs = new Object[args.length()];
+        for (int i = 0; i < args.length(); i++) {
+            var arg = args.getJSONObject(i);
+            String argName = arg.getString(Constants.METHOD_ARG_NAME);
+            String argType = arg.getString(Constants.METHOD_ARG_TYPE);
+            Object argValue = arg.get(Constants.PROP_VALUE);
+            if ( argValue != null ) {
+                String valueType = argValue.getClass().getSimpleName();
+                // Lets do some type checking and try to convert the value if possible!
+                if ( valueType.equals("String") ) {
+                    if (argType.equals("int")||argType.equals("Integer"))
+                        argValue = Integer.parseInt(argValue.toString());
+                    else if (argType.equals("long")||argType.equals("Long"))
+                        argValue = Long.parseLong(argValue.toString());
+                    else if (argType.equals("double")||argType.equals("Double"))
+                        argValue = Double.parseDouble(argValue.toString());
+                    else if (argType.equals("float")||argType.equals("Float"))
+                        argValue = Float.parseFloat(argValue.toString());
+                    else if (argType.equals("boolean")||argType.equals("Boolean"))
+                        argValue = Boolean.parseBoolean(argValue.toString());
+                }
+            }
+            methodArgs[i] = argValue;
+        }
+
+        try {
+            Method method;
+            Object result;
+            if ( methodArgs.length == 0 ) {
+                method = this.getClass().getMethod(methodName);
+                result = method.invoke(this);
+            } else {
+                method = this.getClass().getMethod(methodName, methodArgs[0].getClass());
+                result = method.invoke(this, methodArgs[0]);
+            }
+            return new JSONObject()
+                    .put(Constants.METHOD_NAME, methodName)
+                    .put(Constants.METHOD_RETURNS, result);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new JSONObject();
     }
 
     public void bind(

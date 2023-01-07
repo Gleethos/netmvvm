@@ -20,18 +20,14 @@
     <div>
         <label id="feedback-id">?</label>
     </div>
+    <div>
+        <button id="register-id">Register</button>
+    </div>
 </body>
-<script src="MVVM_binding.js"></script>
+<script src="backend-binder.js"></script>
 <script>
-        start(
-            'ws://localhost:8080/websocket',
-            (
-                vm,    // The current view model
-                vmSet, // Send a property change to the server, expects 2 arguments: propName, value
-                vmGet, // For binding to properties, expects 2 parameters: the property name and the action to call when the property changes
-                get    // For loading a new view model, expects 2 parameters: vmId and action
-            )=>{
-            const props = vm[PROPS];
+        start('ws://localhost:8080/websocket', ( session, vm ) => {
+            const props = vm.state[PROPS];
             // We turn the view model json into a pretty string
             const viewModelPrettyString = JSON.stringify(props, null, 4);
             console.log("loadView... "+viewModelPrettyString);
@@ -40,13 +36,13 @@
             // We attach a simple username password form with a terms of service checkbox
             const username = document.getElementById("username-id");
             username.value = props.username.value;
-            username.onkeyup = (event) => { vmSet("username", event.target.value); };
-            vmGet('username', txt => { username.value = txt; });
+            username.onkeyup = (event) => { vm.set("username", event.target.value); };
+            vm.get('username', txt => { username.value = txt; });
 
             const password = document.getElementById("password-id");
             password.value = props.password.value;
-            password.onkeyup = (event) => { vmSet("password", event.target.value); };
-            vmGet('password', txt => { password.value = txt; });
+            password.onkeyup = (event) => { vm.set("password", event.target.value); };
+            vm.get('password', txt => { password.value = txt; });
 
             // now the gender drop down:
             const gender = document.getElementById("gender-id");
@@ -57,18 +53,25 @@
                 option.text = genders[i];
                 gender.appendChild(option);
             }
-            gender.onchange = (event) => { vmSet("gender", event.target.value) };
-            vmGet("gender", txt => gender.value = txt);
+            gender.onchange = (event) => { vm.set("gender", event.target.value) };
+            gender.value = props.gender.value
+            vm.get("gender", txt => gender.value = txt);
 
             const termsOfService = document.getElementById("terms-id");
             termsOfService.checked = props.termsAccepted.value;
-            termsOfService.onchange = (event) => { vmSet("termsAccepted", event.target.checked); };
-            vmGet('termsOfService', txt => { termsOfService.checked = txt; });
+            termsOfService.onchange = (event) => { vm.set("termsAccepted", event.target.checked); };
+            vm.get('termsOfService', txt => { termsOfService.checked = txt; });
 
             const feedback = document.getElementById("feedback-id");
             // We replace \n with br tags
             feedback.innerHTML = props.feedback.value.replace(/\\n/g, "<br>");
-            vmGet('feedback', txt => { feedback.innerHTML = txt.replace(/\\n/g, "<br>"); });
+            vm.get('feedback', txt => { feedback.innerHTML = txt.replace(/\\n/g, "<br>"); });
+
+            const register = document.getElementById("register-id");
+            register.onclick = (event) => {
+                vm.register()
+            };
+
         });
     </script>
 </html>

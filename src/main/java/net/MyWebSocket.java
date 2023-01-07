@@ -49,6 +49,13 @@ public class MyWebSocket {
                 e.printStackTrace();
             }
         }
+        else if ( type.equals(Constants.CALL) ) {
+            try {
+                callMethodOnVM(json);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
 
     }
 
@@ -90,6 +97,12 @@ public class MyWebSocket {
         String value    = json.getString(Constants.PROP_VALUE);
         AbstractViewModel vm = SkinContext.instance().get(vmId);
         vm.applyToPropertyById(propName, value);
+    }
+
+    private void callMethodOnVM(JSONObject json) {
+        String vmId     = json.getString(Constants.VM_ID);
+        AbstractViewModel vm = SkinContext.instance().get(vmId);
+        vm.call(json.getJSONObject(Constants.EVENT_PAYLOAD));
     }
 
 }
