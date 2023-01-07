@@ -10,6 +10,8 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import swingtree.api.UIAction;
+import swingtree.api.mvvm.ValDelegate;
 
 @WebSocket
 public class MyWebSocket {
@@ -56,19 +58,25 @@ public class MyWebSocket {
         AbstractViewModel vm = SkinContext.instance().get(vmId);
         vmJson.put(Constants.EVENT_TYPE, Constants.RETURN_GET_VM);
         vmJson.put(Constants.EVENT_PAYLOAD, vm.toJson());
-        vm.bind( delegate -> {
-            try {
-                JSONObject update = new JSONObject();
-                update.put(Constants.EVENT_TYPE, Constants.RETURN_PROP);
-                update.put(Constants.EVENT_PAYLOAD,
-                    JsonUtil.fromProperty(delegate.getCurrent())
-                    .put(Constants.VM_ID, vmId)
-                );
-                String returnJson = update.toString();
-                System.out.println("Sending property: " + returnJson);
-                session.getRemote().sendString(returnJson);
-            } catch (Exception e) {
-                e.printStackTrace();
+        vm.bind(new UIAction<ValDelegate<Object>>() {
+            @Override
+            public void accept(ValDelegate<Object> delegate) {
+                try {
+                    JSONObject update = new JSONObject();
+                    update.put(Constants.EVENT_TYPE, Constants.RETURN_PROP);
+                    update.put(Constants.EVENT_PAYLOAD,
+                            JsonUtil.fromProperty(delegate.getCurrent())
+                                    .put(Constants.VM_ID, vmId)
+                    );
+                    String returnJson = update.toString();
+                    System.out.println("Sending property: " + returnJson);
+                    session.getRemote().sendString(returnJson);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            @Override public boolean canBeRemoved() {
+                return !session.isOpen();
             }
         });
         // Send a message to the client that sent the message

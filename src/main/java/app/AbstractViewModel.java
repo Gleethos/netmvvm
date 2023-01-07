@@ -4,10 +4,12 @@ import binding.SkinContext;
 import binding.VMID;
 import net.Constants;
 import net.JsonUtil;
+import swingtree.api.UIAction;
 import swingtree.api.mvvm.Val;
 
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.json.JSONObject;
 import swingtree.api.mvvm.ValDelegate;
@@ -64,8 +66,10 @@ public class AbstractViewModel
         return result;
     }
 
-    public void bind( Consumer<ValDelegate<Object>> observer ) {
-        findProperties().forEach( p -> p.onShow(observer::accept) );
+    public void bind(
+        UIAction<ValDelegate<Object>> observer
+    ) {
+        findProperties().forEach( p -> p.onShow(observer) );
     }
 
     private  <T> Var<T> getPropById( String id ) {

@@ -5,8 +5,20 @@
     <title>Title</title>
 </head>
 <body>
-    <div id = "application-content">
-
+    <h1>Registration</h1>
+    <div>
+        <label for="username-id">User</label><input id="username-id" type="text" placeholder="Username">
+        <label for="password-id">Password</label><input id="password-id" type="password" placeholder="Password">
+    </div>
+    <div>
+        <label for="email-id"></label>Email<input id="email-id" type="email" placeholder="Email">
+        <label for="gender-id">Gender</label><select id="gender-id"></select>
+    </div>
+    <div>
+        <label for="terms-id">I agree to the terms of service:</label><input id="terms-id" type="checkbox">
+    </div>
+    <div>
+        <label id="feedback-id">?</label>
     </div>
 </body>
 <script src="MVVM_binding.js"></script>
@@ -24,47 +36,39 @@
             const viewModelPrettyString = JSON.stringify(props, null, 4);
             console.log("loadView... "+viewModelPrettyString);
             // Now let's load the view model into the view
-            const applicationContent = document.getElementById("application-content");
 
             // We attach a simple username password form with a terms of service checkbox
-            const username = document.createElement("input");
-            username.type = "text";
-            username.placeholder = "Username";
+            const username = document.getElementById("username-id");
             username.value = props.username.value;
-            username.onchange = (event) => { vmSet("username", event.target.value); };
+            username.onkeyup = (event) => { vmSet("username", event.target.value); };
             vmGet('username', txt => { username.value = txt; });
-            applicationContent.appendChild(username);
 
-            const password = document.createElement("input");
-            password.type = "password";
-            password.placeholder = "Password";
+            const password = document.getElementById("password-id");
             password.value = props.password.value;
-            password.onchange = (event) => { vmSet("password", event.target.value); };
+            password.onkeyup = (event) => { vmSet("password", event.target.value); };
             vmGet('password', txt => { password.value = txt; });
-            applicationContent.appendChild(password);
-            // break:
-            applicationContent.appendChild(document.createElement("br"));
 
-            const termsOfService = document.createElement("input");
-            termsOfService.type = "checkbox";
+            // now the gender drop down:
+            const gender = document.getElementById("gender-id");
+            const genders = props.gender.type.states;
+            for (let i = 0; i < genders.length; i++) {
+                const option = document.createElement("option");
+                option.value = genders[i];
+                option.text = genders[i];
+                gender.appendChild(option);
+            }
+            gender.onchange = (event) => { vmSet("gender", event.target.value) };
+            vmGet("gender", txt => gender.value = txt);
+
+            const termsOfService = document.getElementById("terms-id");
             termsOfService.checked = props.termsAccepted.value;
             termsOfService.onchange = (event) => { vmSet("termsAccepted", event.target.checked); };
             vmGet('termsOfService', txt => { termsOfService.checked = txt; });
-            applicationContent.appendChild(termsOfService);
 
-            const termsOfServiceLabel = document.createElement("label");
-            termsOfServiceLabel.innerHTML = "I agree to the terms of service";
-            applicationContent.appendChild(termsOfServiceLabel);
-
-            // break:
-            applicationContent.appendChild(document.createElement("br"));
-            applicationContent.appendChild(document.createElement("br"));
-
-            const feedback = document.createElement("div");
+            const feedback = document.getElementById("feedback-id");
             // We replace \n with br tags
             feedback.innerHTML = props.feedback.value.replace(/\\n/g, "<br>");
             vmGet('feedback', txt => { feedback.innerHTML = txt.replace(/\\n/g, "<br>"); });
-            applicationContent.appendChild(feedback);
         });
     </script>
 </html>
