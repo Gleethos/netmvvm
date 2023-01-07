@@ -105,12 +105,12 @@ function Session(
  * @param serverAddress
  * @param frontend
  */
-function start(serverAddress, frontend) {
+function start(serverAddress, iniViewModelId, frontend) {
     const ws = new WebSocket(serverAddress);
     const propertyObservers = {};
     const viewModelObservers = {};
 
-    ws.onopen = () => { sendVMRequest("app.UserRegistrationViewModel-0"); };
+    ws.onopen = () => { sendVMRequest(iniViewModelId); };
     ws.onmessage = (event) => {
         // We parse the data as json:
         console.log("Received data from server!");

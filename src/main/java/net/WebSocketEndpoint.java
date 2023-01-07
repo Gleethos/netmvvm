@@ -6,6 +6,9 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 public class WebSocketEndpoint extends WebSocketServlet {
     @Override
     public void configure(WebSocketServletFactory factory) {
-        factory.register(MyWebSocket.class);
+        // set a 10 second idle timeout
+        factory.getPolicy().setIdleTimeout(10000);
+        // register my socket
+        factory.register(BindingWebSocket.class);
     }
 }

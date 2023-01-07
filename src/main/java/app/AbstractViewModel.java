@@ -5,17 +5,14 @@ import binding.VMID;
 import net.Constants;
 import net.JsonUtil;
 import org.json.JSONArray;
+import org.json.JSONObject;
 import swingtree.api.UIAction;
 import swingtree.api.mvvm.Val;
+import swingtree.api.mvvm.ValDelegate;
+import swingtree.api.mvvm.Var;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import org.json.JSONObject;
-import swingtree.api.mvvm.ValDelegate;
-import swingtree.api.mvvm.Var;
 
 /**
  *  Uses reflection to iterate over all of its field variables
@@ -194,7 +191,9 @@ public class AbstractViewModel
             if ( prop.allowsNull() )
                 prop.act(null);
             else
-                throw new RuntimeException("Property '" + id + "' does not allow null values");
+                throw new RuntimeException(
+                        "Property '" + id + "' does not allow null values, but view attempted to set it to null!"
+                    );
 
             return;
         }

@@ -26,7 +26,10 @@
 </body>
 <script src="backend-binder.js"></script>
 <script>
-        start('ws://localhost:8080/websocket', ( session, vm ) => {
+        start(
+            'ws://localhost:8080/websocket',
+            'app.UserRegistrationViewModel-0', // The "main" view model where the application starts
+            ( session, vm ) => {
             const props = vm.state[PROPS];
             // We turn the view model json into a pretty string
             const viewModelPrettyString = JSON.stringify(props, null, 4);
@@ -71,12 +74,10 @@
             // We replace \n with br tags
             feedback.innerHTML = props.feedback.value.replace(/\\n/g, "<br>");
             vm.get('feedback', txt => { feedback.innerHTML = txt.replace(/\\n/g, "<br>"); });
+            vm.get('feedbackColor', c => { feedback.style.color = c;});
 
             const register = document.getElementById("register-id");
-            register.onclick = (event) => {
-                vm.register()
-            };
-
+            register.onclick = (event) => { vm.register() };
         });
     </script>
 </html>

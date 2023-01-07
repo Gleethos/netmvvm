@@ -5,6 +5,7 @@ import org.json.JSONObject;
 import swingtree.api.mvvm.Val;
 import swingtree.api.mvvm.Viewable;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +52,11 @@ public class JsonUtil {
                 return vm.vmid().toString();
             else
                 return String.valueOf(viewable);
+        }
+        else if ( prop.type() == Color.class ) {
+            // In the frontend colors are usually hex strings
+            Color color = (Color) prop.get();
+            return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
         }
 
         Object value = prop.get();
