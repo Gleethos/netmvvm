@@ -94,7 +94,7 @@ public class MyWebSocket {
     private void applyMutationToVM(JSONObject json) {
         String vmId     = json.getString(Constants.VM_ID);
         String propName = json.getString(Constants.PROP_NAME);
-        String value    = json.getString(Constants.PROP_VALUE);
+        String value    = String.valueOf(json.get(Constants.PROP_VALUE));
         AbstractViewModel vm = SkinContext.instance().get(vmId);
         vm.applyToPropertyById(propName, value);
     }

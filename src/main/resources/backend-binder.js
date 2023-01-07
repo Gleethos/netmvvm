@@ -120,7 +120,7 @@ function start(serverAddress, frontend) {
     };
 
     function sendVMRequest(vmId) {
-        ws.send("{'" + EVENT_TYPE + "':'" + GET_VM + "','" + VM_ID + "':'" + vmId + "'}");
+        ws.send(JSON.stringify({[EVENT_TYPE]: GET_VM, [VM_ID]: vmId}));
     }
 
     function processResponse(data) {
@@ -140,14 +140,13 @@ function start(serverAddress, frontend) {
                             ws,
                             viewModel,
                             (propName, value) => {
-                                ws.send(
-                                    "{" +
-                                    "'" + EVENT_TYPE + "':'" + SET_PROP + "', " +
-                                    "'" + VM_ID + "':'" + vmId + "', " +
-                                    "'" + PROP_NAME + "':'" + propName + "', " +
-                                    "'" + PROP_VALUE + "':'" + value + "'" +
-                                    "}"
-                                );
+                                ws.send(JSON.stringify({
+                                        [EVENT_TYPE]: SET_PROP,
+                                        [VM_ID]: vmId,
+                                        [PROP_NAME]: propName,
+                                        [PROP_VALUE]: value,
+                                    }
+                                ));
                             },
                             (propName, action) => {
                                 propertyObservers[vmId + ":" + propName] = action;

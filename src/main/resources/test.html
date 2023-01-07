@@ -44,6 +44,11 @@
             password.onkeyup = (event) => { vm.set("password", event.target.value); };
             vm.get('password', txt => { password.value = txt; });
 
+            const email = document.getElementById("email-id");
+            email.value = props.email.value;
+            email.onkeyup = (event) => { vm.set("email", event.target.value); };
+            vm.get('email', txt => { email.value = txt; });
+
             // now the gender drop down:
             const gender = document.getElementById("gender-id");
             const genders = props.gender.type.states;
