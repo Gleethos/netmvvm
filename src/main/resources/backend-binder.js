@@ -121,6 +121,14 @@ function start(serverAddress, iniViewModelId, frontend) {
     };
 
     function send(message) {
+        // The web socket might be closed, if so we reopen it
+        // and send the message when it is open again:
+        if (ws.readyState === WebSocket.CLOSED) {
+            ws.onopen = () => { send(message); };
+            ws.open();
+            return
+        }
+        // If the websocket is not open, we wait for it to open:
         ws.send(JSON.stringify(message));
     }
 
