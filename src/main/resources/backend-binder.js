@@ -46,7 +46,7 @@ const PROP_TYPE_STATES = "states";
  * @constructor
  */
 function VM(
-    ws,
+    send,
     vm,    // The current view model
     vmSet, // Send a property change to the server, expects 2 arguments: propName, value
     vmGet, // For binding to properties, expects 2 parameters: the property name and the action to call when the property changes
@@ -61,17 +61,17 @@ function VM(
         const method = methods[i];
         console.log("Method: " + JSON.stringify(method));
         // Currently we only support void methods:
-        if (method.returns === "void") {
-            this[method.name] = function(...args) {
+        if (method[METHOD_RETURNS] === "void") {
+            this[method[METHOD_ARG_NAME]] = function(...args) {
                 console.log("Calling method: " + method);
-                ws.send(JSON.stringify({
+                send({
                     [EVENT_TYPE]: CALL,
                     [EVENT_PAYLOAD]: {
-                        [METHOD_NAME]: method.name,
+                        [METHOD_NAME]: method[METHOD_ARG_NAME],
                         [METHOD_ARGS]: args
                     },
                     [VM_ID]: vm[VM_ID]
-                }));
+                });
             }
         }
     }
@@ -102,8 +102,9 @@ function Session(
  *  through the second parameter, a function that will receive the above defined
  *  Session object as well as VM object.
  *
- * @param serverAddress
- * @param frontend
+ * @param serverAddress the address of the web-socket server to connect to
+ * @param iniViewModelId the id of the view model to load
+ * @param frontend the function to call when the view model is loaded
  */
 function start(serverAddress, iniViewModelId, frontend) {
     const ws = new WebSocket(serverAddress);
@@ -119,8 +120,12 @@ function start(serverAddress, iniViewModelId, frontend) {
         processResponse(data);
     };
 
+    function send(message) {
+        ws.send(JSON.stringify(message));
+    }
+
     function sendVMRequest(vmId) {
-        ws.send(JSON.stringify({[EVENT_TYPE]: GET_VM, [VM_ID]: vmId}));
+        send({[EVENT_TYPE]: GET_VM, [VM_ID]: vmId});
     }
 
     function processResponse(data) {
@@ -137,16 +142,16 @@ function start(serverAddress, iniViewModelId, frontend) {
 
             console.log("Received view model: " + JSON.stringify(viewModel));
             const vm = new VM(
-                            ws,
+                            send,
                             viewModel,
                             (propName, value) => {
-                                ws.send(JSON.stringify({
+                                send({
                                         [EVENT_TYPE]: SET_PROP,
                                         [VM_ID]: vmId,
                                         [PROP_NAME]: propName,
                                         [PROP_VALUE]: value,
                                     }
-                                ));
+                                );
                             },
                             (propName, action) => {
                                 propertyObservers[vmId + ":" + propName] = action;
