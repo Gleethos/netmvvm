@@ -1,6 +1,7 @@
 package net;
 
 import app.AbstractViewModel;
+import binding.UserContext;
 import org.json.JSONObject;
 import swingtree.api.mvvm.Val;
 import swingtree.api.mvvm.Viewable;
@@ -13,7 +14,7 @@ public class JsonUtil {
 
     private JsonUtil() {}
 
-    public static JSONObject fromProperty(Val<?> property) {
+    public static JSONObject fromProperty(Val<?> property, UserContext userContext) {
         Class<?> type = property.type();
         List<String> knownStates = new ArrayList<>();
         if ( Enum.class.isAssignableFrom(type) ) {
@@ -23,7 +24,7 @@ public class JsonUtil {
 
         JSONObject json = new JSONObject();
         json.put(Constants.PROP_NAME, property.id());
-        json.put(Constants.PROP_VALUE, escapeForJson(property));
+        json.put(Constants.PROP_VALUE, escapeForJson(property, userContext));
         json.put(Constants.PROP_TYPE,
             new JSONObject()
             .put(Constants.PROP_TYPE_NAME, type.getName())
@@ -34,7 +35,7 @@ public class JsonUtil {
     }
 
 
-    private static Object escapeForJson(Val<?> prop) {
+    private static Object escapeForJson(Val<?> prop, UserContext userContext) {
 
         if ( prop.isEmpty() ) return null;
 
@@ -49,7 +50,7 @@ public class JsonUtil {
         else if (Viewable.class.isAssignableFrom(prop.type())) {
             Viewable viewable = (Viewable) prop.get();
             if ( viewable instanceof AbstractViewModel vm )
-                return vm.vmid().toString();
+                return userContext.vmIdOf(vm).toString();
             else
                 return String.valueOf(viewable);
         }

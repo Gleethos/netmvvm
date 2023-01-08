@@ -1,7 +1,7 @@
 package net;
 
 import app.AbstractViewModel;
-import binding.SkinContext;
+import binding.UserContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -18,7 +18,13 @@ public class BindingWebSocket {
 
     private final static Logger log = LoggerFactory.getLogger(BindingWebSocket.class);
 
+    private final UserContext userContext;
+
     private Session session;
+
+    public BindingWebSocket(UserContext userContext) {
+        this.userContext = userContext;
+    }
 
     private void _send( String message ) {
         try {
@@ -32,6 +38,7 @@ public class BindingWebSocket {
     @OnWebSocketConnect
     public void onConnect(Session session) {
         this.session = session;
+        System.out.println(this.hashCode());
         log.info("Connected to client: {}", session.getRemoteAddress().getAddress());
     }
 
@@ -75,9 +82,9 @@ public class BindingWebSocket {
     private void sendVMToFrontend(JSONObject json) {
         String vmId = json.getString(Constants.VM_ID);
         JSONObject vmJson = new JSONObject();
-        AbstractViewModel vm = SkinContext.instance().get(vmId);
+        AbstractViewModel vm = userContext.get(vmId);
         vmJson.put(Constants.EVENT_TYPE, Constants.RETURN_GET_VM);
-        vmJson.put(Constants.EVENT_PAYLOAD, vm.toJson());
+        vmJson.put(Constants.EVENT_PAYLOAD, vm.toJson(userContext));
         vm.bind(new UIAction<>() {
             @Override
             public void accept(ValDelegate<Object> delegate) {
@@ -85,7 +92,7 @@ public class BindingWebSocket {
                     JSONObject update = new JSONObject();
                     update.put(Constants.EVENT_TYPE, Constants.RETURN_PROP);
                     update.put(Constants.EVENT_PAYLOAD,
-                            JsonUtil.fromProperty(delegate.getCurrent())
+                            JsonUtil.fromProperty(delegate.getCurrent(), userContext)
                                     .put(Constants.VM_ID, vmId)
                     );
                     String returnJson = update.toString();
@@ -105,13 +112,13 @@ public class BindingWebSocket {
         String vmId     = json.getString(Constants.VM_ID);
         String propName = json.getString(Constants.PROP_NAME);
         String value    = String.valueOf(json.get(Constants.PROP_VALUE));
-        AbstractViewModel vm = SkinContext.instance().get(vmId);
+        AbstractViewModel vm = userContext.get(vmId);
         vm.applyToPropertyById(propName, value);
     }
 
     private void callMethodOnVM(JSONObject json) {
         String vmId     = json.getString(Constants.VM_ID);
-        AbstractViewModel vm = SkinContext.instance().get(vmId);
+        AbstractViewModel vm = userContext.get(vmId);
         vm.call(json.getJSONObject(Constants.EVENT_PAYLOAD));
     }
 

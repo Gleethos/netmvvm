@@ -1,7 +1,6 @@
 package app;
 
-import binding.SkinContext;
-import binding.VMID;
+import binding.UserContext;
 import net.Constants;
 import net.JsonUtil;
 import org.json.JSONArray;
@@ -22,16 +21,6 @@ import java.util.List;
  */
 public class AbstractViewModel
 {
-    private final VMID<?> _vmid;
-
-    protected AbstractViewModel() {
-        _vmid = SkinContext.instance().put(this);
-    }
-
-    public VMID<?> vmid() {
-        return _vmid;
-    }
-
     /**
      *  Uses reflection to find all the properties of the given view model.
      * @return a list of property instances.
@@ -53,14 +42,14 @@ public class AbstractViewModel
         return properties;
     }
 
-    public JSONObject toJson() {
+    public JSONObject toJson(UserContext userContext) {
         JSONObject json = new JSONObject();
         for ( var property : findProperties() )
-            json.put(property.id(), JsonUtil.fromProperty(property));
+            json.put(property.id(), JsonUtil.fromProperty(property, userContext));
 
         JSONObject result = new JSONObject();
         result.put(Constants.PROPS, json);
-        result.put(Constants.VM_ID, _vmid.toString());
+        result.put(Constants.VM_ID, userContext.vmIdOf(this).toString());
         result.put("methods", _getMethods());
         return result;
     }
@@ -179,8 +168,7 @@ public class AbstractViewModel
                 .orElseThrow(() ->
                     new RuntimeException(
                         "Could not find property with " +
-                        "id '" + id +"' in " + this.getClass().getName() + " " +
-                        "with id '" + _vmid + "'"
+                        "id '" + id +"' in " + this.getClass().getName() + "."
                 ));
     }
 

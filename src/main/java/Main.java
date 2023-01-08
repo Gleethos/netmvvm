@@ -1,7 +1,9 @@
 import app.UserRegistrationViewModel;
+import binding.UserContext;
 import net.WebSocketEndpoint;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
@@ -9,7 +11,6 @@ public class Main {
 
     public static void main( String... args )
     {
-        var vm = new UserRegistrationViewModel();
 
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -19,10 +20,18 @@ public class Main {
         // Set up the web socket endpoint
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
+        context.setResourceBase("src/main/resources");
+
         server.setHandler(context);
 
-        ServletHolder holder = new ServletHolder(WebSocketEndpoint.class);
+        var state = new UserContext();
+        var vm = new UserRegistrationViewModel();
+        state.put(vm);
+        ServletHolder holder = new ServletHolder(new WebSocketEndpoint(state));
         context.addServlet(holder, "/websocket/*");
+        // Now a servlet for serving the actual web page
+        context.addServlet(DefaultServlet.class, "/*");
+        context.setWelcomeFiles(new String[]{"test.html"});
 
         try {
             server.start();

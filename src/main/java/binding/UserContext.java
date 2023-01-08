@@ -4,18 +4,16 @@ import app.AbstractViewModel;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
- *  A singleton hosting all the view model instances.
+ *  Mostly a register for view model instances.
+ *  The view model instances are stored in a WeakHashMap, so they can be garbage collected.
  */
-public class SkinContext {
-
-    private static final SkinContext INSTANCE = new SkinContext();
-
-    public static SkinContext instance() { return INSTANCE; }
-
+public class UserContext {
 
     private final Map<Class, Map<Integer, Object>> _viewModels = new HashMap<>();
+    private final Map<Object, VMID<?>> _vmids = new WeakHashMap<>();
 
     public <T extends AbstractViewModel> T get( VMID<T> id ) {
         return (T)_viewModels.get(id.type()).get(id.id());
@@ -37,14 +35,19 @@ public class SkinContext {
         throw new IllegalArgumentException("id");
     }
 
-    public <T extends AbstractViewModel> void put( VMID<T> id, T viewModel ) {
+    private <T extends AbstractViewModel> void _put(VMID<T> id, T viewModel ) {
         _viewModels.computeIfAbsent(id.type(), k -> new HashMap<>()).put(id.id(), viewModel);
+        _vmids.put(viewModel, id);
     }
 
     public <T extends AbstractViewModel> VMID<T> put( T viewModel ) {
         var id = new VMID<T>((Class<T>) viewModel.getClass(), _viewModels.size());
-        put(id, viewModel);
+        _put(id, viewModel);
         return id;
+    }
+
+    public <T extends AbstractViewModel> VMID<T> vmIdOf( T viewModel ) {
+        return (VMID<T>) _vmids.get(viewModel);
     }
 
 }
