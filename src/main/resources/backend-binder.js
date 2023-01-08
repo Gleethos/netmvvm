@@ -128,7 +128,6 @@ function start(serverAddress, iniViewModelId, frontend) {
             ws.open();
             return
         }
-        // If the websocket is not open, we wait for it to open:
         ws.send(JSON.stringify(message));
     }
 
