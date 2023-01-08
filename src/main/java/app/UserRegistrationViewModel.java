@@ -5,7 +5,7 @@ import swingtree.api.mvvm.Var;
 
 import java.awt.*;
 
-public class UserRegistrationViewModel extends AbstractViewModel
+public class UserRegistrationViewModel
 {
     public enum Gender { NOT_SELECTED, MALE, FEMALE, OTHER }
     private final Var<String>  username         ;

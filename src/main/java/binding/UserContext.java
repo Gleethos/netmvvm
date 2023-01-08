@@ -1,7 +1,5 @@
 package binding;
 
-import app.AbstractViewModel;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -15,11 +13,11 @@ public class UserContext {
     private final Map<Class, Map<Integer, Object>> _viewModels = new HashMap<>();
     private final Map<Object, VMID<?>> _vmids = new WeakHashMap<>();
 
-    public <T extends AbstractViewModel> T get( VMID<T> id ) {
+    public <T> T get( VMID<T> id ) {
         return (T)_viewModels.get(id.type()).get(id.id());
     }
 
-    public <T extends AbstractViewModel> T get( String id ) {
+    public <T> T get( String id ) {
         // The string has the following format "ViewModelClassName-Instance_ID"
         // For example: "UserRegistrationViewModel-0"
         var parts = id.split("-");
@@ -35,19 +33,23 @@ public class UserContext {
         throw new IllegalArgumentException("id");
     }
 
-    private <T extends AbstractViewModel> void _put(VMID<T> id, T viewModel ) {
+    private <T> void _put(VMID<T> id, T viewModel ) {
         _viewModels.computeIfAbsent(id.type(), k -> new HashMap<>()).put(id.id(), viewModel);
         _vmids.put(viewModel, id);
     }
 
-    public <T extends AbstractViewModel> VMID<T> put( T viewModel ) {
+    public <T> VMID<T> put( T viewModel ) {
         var id = new VMID<T>((Class<T>) viewModel.getClass(), _viewModels.size());
         _put(id, viewModel);
         return id;
     }
 
-    public <T extends AbstractViewModel> VMID<T> vmIdOf( T viewModel ) {
+    public <T> VMID<T> vmIdOf( T viewModel ) {
         return (VMID<T>) _vmids.get(viewModel);
+    }
+
+    public boolean hasVM( Object viewModel ) {
+        return _vmids.containsKey(viewModel);
     }
 
 }

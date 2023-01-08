@@ -1,6 +1,5 @@
 package net;
 
-import app.AbstractViewModel;
 import binding.UserContext;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -82,17 +81,17 @@ public class BindingWebSocket {
     private void sendVMToFrontend(JSONObject json) {
         String vmId = json.getString(Constants.VM_ID);
         JSONObject vmJson = new JSONObject();
-        AbstractViewModel vm = userContext.get(vmId);
+        var vm = userContext.get(vmId);
         vmJson.put(Constants.EVENT_TYPE, Constants.RETURN_GET_VM);
-        vmJson.put(Constants.EVENT_PAYLOAD, vm.toJson(userContext));
-        vm.bind(new UIAction<>() {
+        vmJson.put(Constants.EVENT_PAYLOAD, BindingUtil.toJson(vm, userContext));
+        BindingUtil.bind( vm, new UIAction<>() {
             @Override
             public void accept(ValDelegate<Object> delegate) {
                 try {
                     JSONObject update = new JSONObject();
                     update.put(Constants.EVENT_TYPE, Constants.RETURN_PROP);
                     update.put(Constants.EVENT_PAYLOAD,
-                            JsonUtil.fromProperty(delegate.getCurrent(), userContext)
+                            BindingUtil.jsonFromProperty(delegate.getCurrent(), userContext)
                                     .put(Constants.VM_ID, vmId)
                     );
                     String returnJson = update.toString();
@@ -112,14 +111,14 @@ public class BindingWebSocket {
         String vmId     = json.getString(Constants.VM_ID);
         String propName = json.getString(Constants.PROP_NAME);
         String value    = String.valueOf(json.get(Constants.PROP_VALUE));
-        AbstractViewModel vm = userContext.get(vmId);
-        vm.applyToPropertyById(propName, value);
+        var vm = userContext.get(vmId);
+        BindingUtil.applyToViewModelPropertyById(vm, propName, value);
     }
 
     private void callMethodOnVM(JSONObject json) {
         String vmId     = json.getString(Constants.VM_ID);
-        AbstractViewModel vm = userContext.get(vmId);
-        vm.call(json.getJSONObject(Constants.EVENT_PAYLOAD));
+        var vm = userContext.get(vmId);
+        BindingUtil.callViewModelMethod(vm, json.getJSONObject(Constants.EVENT_PAYLOAD));
     }
 
 }
