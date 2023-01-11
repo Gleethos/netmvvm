@@ -35,15 +35,25 @@ const PROP_TYPE_STATES = "states";
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
-function Var(get, set, observe) {
+function Var(get, set, observe, type) {
     Var.prototype.get = get;
     Var.prototype.set = set;
     Var.prototype.onShow = observe;
+    Var.prototype.type = type;
+    Var.prototype.bind = (consumer) => {
+        get(consumer);
+        observe(consumer);
+    }
 }
 
-function Val(get, observe) {
+function Val(get, observe, type) {
     Val.prototype.get = get;
     Val.prototype.onShow = observe;
+    Val.prototype.type = type;
+    Val.prototype.bind = (consumer) => {
+        get(consumer);
+        observe(consumer);
+    }
 }
 
 /**
@@ -53,16 +63,16 @@ function Val(get, observe) {
  *
  * @param  vm the state of the view model (a json object)
  * @param  vmSet a function for setting a property of the view model
- * @param  vmGet a function for registering property observers
+ * @param  vmObserve a function for registering property observers
  * @param  vmCall
  * @return vmGet a function for registering an observer for a property of the view model in the backend
  * @constructor
  */
 function VM(
-    vm,    // The current view model
-    vmSet, // Send a property change to the server, expects 2 arguments: propName, value
-    vmGet, // For binding to properties, expects 2 parameters: the property name and the action to call when the property changes
-    vmCall // For calling methods, expects 3 parameters: the method name, the arguments and the action to call when the method returns
+    vm,        // The current view model
+    vmSet,     // Send a property change to the server, expects 2 arguments: propName, value
+    vmObserve, // For binding to properties, expects 2 parameters: the property name and the action to call when the property changes
+    vmCall     // For calling methods, expects 3 parameters: the method name, the arguments and the action to call when the method returns
 ){
     this.state = vm;
     // Now we mirror the methods of the Java view model in JS!
@@ -72,8 +82,8 @@ function VM(
         const method = methods[i];
         console.log("Method: " + JSON.stringify(method));
         // Currently we only support void methods:
-        if (method[METHOD_RETURNS] === "void") {
-            this[method[METHOD_NAME]] = function(...args) {
+        if ( method[METHOD_RETURNS] === "void" ) {
+            this[method[METHOD_NAME]] = (...args)=>{
                 console.log("Calling method: " + method);
                 vmCall(
                     method[METHOD_NAME],
@@ -82,7 +92,7 @@ function VM(
                 );
             }
         } else if ( method[METHOD_RETURNS] === "Var" || method[METHOD_RETURNS] === "Val" ) {
-            this[method[METHOD_NAME]] = function(...args) {
+            this[method[METHOD_NAME]] = (...args)=>{
                 console.log("Calling property method: " + method[METHOD_NAME]);
                 const propGet = (consumer) => {
                                     console.log("Registering consumer for property method: " + method[METHOD_NAME]);
@@ -103,7 +113,7 @@ function VM(
                                             args,
                                             (property) => {
                                                 console.log("prop for observing: "+JSON.stringify(property));
-                                                vmGet(property[PROP_NAME], consumer);
+                                                vmObserve(property[PROP_NAME], consumer);
                                             }
                                         );
                                     };
@@ -122,11 +132,22 @@ function VM(
                         }
                     );
                 };
+                const propType = (consumer) => {
+                    console.log("Registering consumer for property type: " + method[METHOD_NAME]);
+                    vmCall(
+                        method[METHOD_NAME],
+                        args,
+                        (property) => {
+                            console.log("prop for type: "+JSON.stringify(property));
+                            consumer(property[PROP_TYPE]);
+                        }
+                    );
+                };
 
                 if (method[METHOD_RETURNS] === "Var") {
-                    return new Var(propGet, propSet, propObserve);
+                    return new Var(propGet, propSet, propObserve, propType);
                 } else {
-                    return new Val(propGet, propObserve);
+                    return new Val(propGet, propObserve, propType);
                 }
             }
         }
@@ -168,13 +189,13 @@ function start(serverAddress, iniViewModelId, frontend) {
     const viewModelObservers = {};
     const methodObservers = {};
 
-    function startWebsocket(doInit) {
+    function startWebsocket(action) {
         ws = new WebSocket(serverAddress)
-        ws.onopen = () => { if (doInit) sendVMRequest(iniViewModelId); };
-        ws.onclose = function(){
+        ws.onopen = () => { action(); };
+        ws.onclose = () => {
             // connection closed, discard old websocket and create a new one in 5s
-            ws = null
-            setTimeout(()=>startWebsocket(false), 5000)
+            ws = null;
+            setTimeout(() => startWebsocket( ()=>{} ), 5000);
         }
         ws.onmessage = (event) => {
             // We parse the data as json:
@@ -184,7 +205,7 @@ function start(serverAddress, iniViewModelId, frontend) {
             processResponse(data);
         };
     }
-    startWebsocket(true);
+    startWebsocket( () => sendVMRequest(iniViewModelId) );
 
     function send(message) {
         if ( ws === null ) {
@@ -194,20 +215,17 @@ function start(serverAddress, iniViewModelId, frontend) {
         // The web socket might be closed, if so we reopen it
         // and send the message when it is open again:
         if (ws.readyState === WebSocket.CLOSED) {
-            ws.onopen = () => { send(message); };
-            ws.open();
-            return
+            startWebsocket(() => { send(message); });
+            return;
         }
         ws.send(JSON.stringify(message));
     }
 
-    function sendVMRequest(vmId) {
-        send({[EVENT_TYPE]: GET_VM, [VM_ID]: vmId});
-    }
+    function sendVMRequest(vmId) { send({[EVENT_TYPE]: GET_VM, [VM_ID]: vmId}); }
 
     function processResponse(data) {
         // Now let's check the EventType: either a view model or a property change...
-        if (data[EVENT_TYPE] === RETURN_GET_VM) {
+        if ( data[EVENT_TYPE] === RETURN_GET_VM ) {
             // We have a view model, so we can set it as the current view model:
             const viewModel = data[EVENT_PAYLOAD];
             const vmId = viewModel[VM_ID];
