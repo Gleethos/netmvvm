@@ -35,6 +35,17 @@ const PROP_TYPE_STATES = "states";
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 
+function Var(get, set, observe) {
+    Var.prototype.get = get;
+    Var.prototype.set = set;
+    Var.prototype.onShow = observe;
+}
+
+function Val(get, observe) {
+    Val.prototype.get = get;
+    Val.prototype.onShow = observe;
+}
+
 /**
  *  This is used as a representation of a view model.
  *  it exposes the current state of the view model as
@@ -46,10 +57,10 @@ const PROP_TYPE_STATES = "states";
  * @constructor
  */
 function VM(
-    send,
     vm,    // The current view model
     vmSet, // Send a property change to the server, expects 2 arguments: propName, value
     vmGet, // For binding to properties, expects 2 parameters: the property name and the action to call when the property changes
+    vmCall // For calling methods, expects 3 parameters: the method name, the arguments and the action to call when the method returns
 ){
     this.state = vm;
     VM.prototype.set = vmSet;
@@ -62,16 +73,61 @@ function VM(
         console.log("Method: " + JSON.stringify(method));
         // Currently we only support void methods:
         if (method[METHOD_RETURNS] === "void") {
-            this[method[METHOD_ARG_NAME]] = function(...args) {
+            this[method[METHOD_NAME]] = function(...args) {
                 console.log("Calling method: " + method);
-                send({
-                    [EVENT_TYPE]: CALL,
-                    [EVENT_PAYLOAD]: {
-                        [METHOD_NAME]: method[METHOD_ARG_NAME],
-                        [METHOD_ARGS]: args
-                    },
-                    [VM_ID]: vm[VM_ID]
-                });
+                vmCall(
+                    method[METHOD_NAME],
+                    args,
+                    () => console.log("Method returned")
+                );
+            }
+        } else if ( method[METHOD_RETURNS] === "Var" || method[METHOD_RETURNS] === "Val" ) {
+            this[method[METHOD_NAME]] = function(...args) {
+                console.log("Calling property method: " + method[METHOD_NAME]);
+                const propGet = (consumer) => {
+                                    console.log("Registering consumer for property method: " + method[METHOD_NAME]);
+                                    vmCall(
+                                        method[METHOD_NAME],
+                                        args,
+                                        (property) => {
+                                            console.log("GETTING!!: "+JSON.stringify(property));
+                                            consumer(property[PROP_VALUE]);
+                                        }
+                                    );
+                                };
+
+                const propObserve = (consumer) => {
+                                        console.log("Registering consumer for property method: " + method[METHOD_NAME]);
+                                        vmCall(
+                                            method[METHOD_NAME],
+                                            args,
+                                            (property) => {
+                                                console.log("prop for observing: "+JSON.stringify(property));
+                                                vmGet(property[PROP_NAME], consumer);
+                                            }
+                                        );
+                                    };
+
+                const propSet = (newValue) => {
+                    console.log("Calling property set method: " + method[METHOD_NAME]);
+                    vmCall(
+                        method[METHOD_NAME],
+                        args,
+                        (property) => {
+                            console.log("prop for setting: "+JSON.stringify(property));
+                            vmSet(
+                                property[PROP_NAME],
+                                newValue
+                            );
+                        }
+                    );
+                };
+
+                if (method[METHOD_RETURNS] === "Var") {
+                    return new Var(propGet, propSet, propObserve);
+                } else {
+                    return new Val(propGet, propObserve);
+                }
             }
         }
     }
@@ -107,20 +163,34 @@ function Session(
  * @param frontend the function to call when the view model is loaded
  */
 function start(serverAddress, iniViewModelId, frontend) {
-    const ws = new WebSocket(serverAddress);
+    let ws = null;
     const propertyObservers = {};
     const viewModelObservers = {};
+    const methodObservers = {};
 
-    ws.onopen = () => { sendVMRequest(iniViewModelId); };
-    ws.onmessage = (event) => {
-        // We parse the data as json:
-        console.log("Received data from server!");
-        const data = JSON.parse(event.data);
-        console.log('From server' + JSON.stringify(data));
-        processResponse(data);
-    };
+    function startWebsocket(doInit) {
+        ws = new WebSocket(serverAddress)
+        ws.onopen = () => { if (doInit) sendVMRequest(iniViewModelId); };
+        ws.onclose = function(){
+            // connection closed, discard old websocket and create a new one in 5s
+            ws = null
+            setTimeout(()=>startWebsocket(false), 5000)
+        }
+        ws.onmessage = (event) => {
+            // We parse the data as json:
+            console.log("Received data from server!");
+            const data = JSON.parse(event.data);
+            console.log('From server' + JSON.stringify(data));
+            processResponse(data);
+        };
+    }
+    startWebsocket(true);
 
     function send(message) {
+        if ( ws === null ) {
+            console.log("Websocket is null, cannot send message '" + message + "'");
+            return;
+        }
         // The web socket might be closed, if so we reopen it
         // and send the message when it is open again:
         if (ws.readyState === WebSocket.CLOSED) {
@@ -142,14 +212,13 @@ function start(serverAddress, iniViewModelId, frontend) {
             const viewModel = data[EVENT_PAYLOAD];
             const vmId = viewModel[VM_ID];
 
-            if (viewModelObservers[vmId]) {
+            if ( viewModelObservers[vmId] ) {
                 viewModelObservers[vmId](viewModel);
                 return;
             }
 
             console.log("Received view model: " + JSON.stringify(viewModel));
             const vm = new VM(
-                            send,
                             viewModel,
                             (propName, value) => {
                                 send({
@@ -157,11 +226,24 @@ function start(serverAddress, iniViewModelId, frontend) {
                                         [VM_ID]: vmId,
                                         [PROP_NAME]: propName,
                                         [PROP_VALUE]: value,
-                                    }
-                                );
+                                    });
                             },
                             (propName, action) => {
                                 propertyObservers[vmId + ":" + propName] = action;
+                            },
+                            (methodName, args, action) => {
+                                let key = vmId + ":" + methodName;
+                                if ( !methodObservers[key] ) methodObservers[key] = [];
+                                methodObservers[key].push(action);
+                                console.log("saved method observer: '" + vmId + ":" + methodName+"'");
+                                send({
+                                        [EVENT_TYPE]: CALL,
+                                        [EVENT_PAYLOAD]: {
+                                            [METHOD_NAME]: methodName,
+                                            [METHOD_ARGS]: args
+                                        },
+                                        [VM_ID]: vmId
+                                    });
                             }
                         );
 
@@ -173,6 +255,16 @@ function start(serverAddress, iniViewModelId, frontend) {
             // If we have a binding, we call it with the new value:
             if (action)
                 action(data[EVENT_PAYLOAD][PROP_VALUE]);
+        } else if (data[EVENT_TYPE] === CALL_RETURN) {
+            const actions = methodObservers[data[EVENT_PAYLOAD][VM_ID] + ":" + data[EVENT_PAYLOAD][METHOD_NAME]];
+            if ( actions ) {
+                // We get and remove the first action from the list:
+                let action = actions.shift();
+                console.log("found method observer: '" + data[EVENT_PAYLOAD][VM_ID] + ":" + data[EVENT_PAYLOAD][METHOD_NAME] + "'");
+                if ( action )
+                    action(data[EVENT_PAYLOAD][METHOD_RETURNS]);
+                console.log("Applied: " + JSON.stringify(data[EVENT_PAYLOAD][METHOD_RETURNS]));
+            }
         }
     }
 }

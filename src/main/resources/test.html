@@ -38,19 +38,20 @@
 
             // We attach a simple username password form with a terms of service checkbox
             const username = document.getElementById("username-id");
-            username.value = props.username.value;
-            username.onkeyup = (event) => { vm.set("username", event.target.value); };
-            vm.get('username', txt => { username.value = txt; });
+            //username.value = props.username.value;
+            vm.username().get( v => username.value = v );
+            username.onkeyup = (event) => vm.username().set(event.target.value);
+            vm.username().onShow( txt => username.value = txt );
 
             const password = document.getElementById("password-id");
-            password.value = props.password.value;
-            password.onkeyup = (event) => { vm.set("password", event.target.value); };
-            vm.get('password', txt => { password.value = txt; });
+            vm.password().get( v => password.value = v );
+            password.onkeyup = (event) => { vm.password().set(event.target.value); };
+            vm.password().onShow( txt => { password.value = txt; });
 
             const email = document.getElementById("email-id");
-            email.value = props.email.value;
-            email.onkeyup = (event) => { vm.set("email", event.target.value); };
-            vm.get('email', txt => { email.value = txt; });
+            vm.email().get( v => email.value = v );
+            email.onkeyup = (event) => { vm.email().set( event.target.value); };
+            vm.email().onShow( txt => { email.value = txt; });
 
             // now the gender drop down:
             const gender = document.getElementById("gender-id");
@@ -61,23 +62,24 @@
                 option.text = genders[i];
                 gender.appendChild(option);
             }
-            gender.onchange = (event) => { vm.set("gender", event.target.value) };
-            gender.value = props.gender.value
-            vm.get("gender", txt => gender.value = txt);
+            gender.onchange = (event) => { vm.gender().set(event.target.value) };
+            vm.gender().get( v => gender.value = v )
+            vm.gender().onShow( v => gender.value = v )
 
             const termsOfService = document.getElementById("terms-id");
-            termsOfService.checked = props.termsAccepted.value;
-            termsOfService.onchange = (event) => { vm.set("termsAccepted", event.target.checked); };
-            vm.get('termsOfService', txt => { termsOfService.checked = txt; });
+            vm.termsAccepted().get( v => termsOfService.checked = v );
+            termsOfService.onchange = (event) => { vm.termsAccepted().set(event.target.checked); };
+            vm.termsAccepted().onShow( v => termsOfService.checked = v );
 
             const feedback = document.getElementById("feedback-id");
             // We replace \n with br tags
             feedback.innerHTML = props.feedback.value.replace(/\\n/g, "<br>");
-            vm.get('feedback', txt => { feedback.innerHTML = txt.replace(/\\n/g, "<br>"); });
-            vm.get('feedbackColor', c => { feedback.style.color = c;});
+            //vm.get('feedback', txt => { feedback.innerHTML = txt.replace(/\\n/g, "<br>"); });
+            vm.feedback().onShow( txt => { feedback.innerHTML = txt.replace(/\\n/g, "<br>"); });
+            vm.feedbackColor().onShow( c => { feedback.style.color = c;});
 
             const register = document.getElementById("register-id");
-            register.onclick = (event) => { vm.register() };
+            register.onclick = () => vm.register();
         });
     </script>
 </html>

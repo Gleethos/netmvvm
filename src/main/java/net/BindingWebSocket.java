@@ -118,7 +118,11 @@ public class BindingWebSocket {
     private void callMethodOnVM(JSONObject json) {
         String vmId     = json.getString(Constants.VM_ID);
         var vm = userContext.get(vmId);
-        BindingUtil.callViewModelMethod(vm, json.getJSONObject(Constants.EVENT_PAYLOAD));
+        var result = BindingUtil.callViewModelMethod(vm, json.getJSONObject(Constants.EVENT_PAYLOAD), userContext);
+        JSONObject returnJson = new JSONObject();
+        returnJson.put(Constants.EVENT_TYPE, Constants.CALL_RETURN);
+        returnJson.put(Constants.EVENT_PAYLOAD, result.put(Constants.VM_ID, vmId));
+        _send(returnJson.toString());
     }
 
 }

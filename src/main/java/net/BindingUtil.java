@@ -41,7 +41,7 @@ public class BindingUtil {
     }
 
 
-    public static <T> Var<T> findViewModelPropById(Object vm, String id ) {
+    public static <T> Var<T> findViewModelPropById( Object vm, String id ) {
         return BindingUtil.findPropertiesInViewModel(vm)
                 .stream()
                 .filter( p -> p instanceof Var<?> )
@@ -167,7 +167,7 @@ public class BindingUtil {
         }
     }
 
-    public static JSONObject callViewModelMethod(Object vm, JSONObject methodCallData) {
+    public static JSONObject callViewModelMethod(Object vm, JSONObject methodCallData, UserContext userContext) {
         /*
             The call request should look like this:
             {
@@ -211,6 +211,9 @@ public class BindingUtil {
             } else {
                 method = vm.getClass().getMethod(methodName, methodArgs[0].getClass());
                 result = method.invoke(vm, methodArgs[0]);
+            }
+            if ( result instanceof Val<?> property ) {
+                result = BindingUtil.jsonFromProperty(property, userContext);
             }
             return new JSONObject()
                     .put(Constants.METHOD_NAME, methodName)
