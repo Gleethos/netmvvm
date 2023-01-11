@@ -74,7 +74,6 @@
             const feedback = document.getElementById("feedback-id");
             // We replace \n with br tags
             feedback.innerHTML = props.feedback.value.replace(/\\n/g, "<br>");
-            //vm.get('feedback', txt => { feedback.innerHTML = txt.replace(/\\n/g, "<br>"); });
             vm.feedback().onShow( txt => { feedback.innerHTML = txt.replace(/\\n/g, "<br>"); });
             vm.feedbackColor().onShow( c => { feedback.style.color = c;});
 

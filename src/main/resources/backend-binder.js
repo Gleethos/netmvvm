@@ -53,6 +53,8 @@ function Val(get, observe) {
  *
  * @param  vm the state of the view model (a json object)
  * @param  vmSet a function for setting a property of the view model
+ * @param  vmGet a function for registering property observers
+ * @param  vmCall
  * @return vmGet a function for registering an observer for a property of the view model in the backend
  * @constructor
  */
@@ -63,8 +65,6 @@ function VM(
     vmCall // For calling methods, expects 3 parameters: the method name, the arguments and the action to call when the method returns
 ){
     this.state = vm;
-    VM.prototype.set = vmSet;
-    VM.prototype.get = vmGet;
     // Now we mirror the methods of the Java view model in JS!
     const methods = vm.methods;
     console.log("Methods: " + JSON.stringify(methods));
