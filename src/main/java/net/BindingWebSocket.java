@@ -12,6 +12,10 @@ import org.slf4j.LoggerFactory;
 import swingtree.api.UIAction;
 import swingtree.api.mvvm.ValDelegate;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
+
 @WebSocket
 public class BindingWebSocket {
 
@@ -25,19 +29,19 @@ public class BindingWebSocket {
         this.userContext = userContext;
     }
 
-    private void _send( String message ) {
+    private void _send( JSONObject json ) {
         try {
+            String message = json.toString();
             session.getRemote().sendStringByFuture(message);
             log.debug("Sent: " + message);
         } catch (Throwable t) {
-            log.error("Error sending message", t);
+            log.error("Error sending message to websocket!", t);
         }
     }
 
     @OnWebSocketConnect
     public void onConnect(Session session) {
         this.session = session;
-        System.out.println(this.hashCode());
         log.info("Connected to client: {}", session.getRemoteAddress().getAddress());
     }
 
@@ -57,6 +61,7 @@ public class BindingWebSocket {
             } catch (Exception e) {
                 log.error("Error sending VM to frontend", e);
                 e.printStackTrace();
+                sendError(e);
             }
         }
         else if ( type.equals(Constants.SET_PROP) ) {
@@ -65,6 +70,7 @@ public class BindingWebSocket {
             } catch (Exception e) {
                 log.error("Error applying mutation to VM", e);
                 e.printStackTrace();
+                sendError(e);
             }
         }
         else if ( type.equals(Constants.CALL) ) {
@@ -73,9 +79,31 @@ public class BindingWebSocket {
             } catch (Exception e) {
                 log.error("Error calling method on VM", e);
                 e.printStackTrace();
+                sendError(e);
             }
         }
+        else if ( type.equals(Constants.ERROR) ) {
+            log.error("Error from frontend: " + json.getString(Constants.EVENT_PAYLOAD));
+        }
+        else {
+            log.error("Unknown event type: " + type);
+        }
 
+    }
+
+    private void sendError(Exception e) {
+        var returnJson = new JSONObject();
+        var errorJson = new JSONObject();
+        returnJson.put(Constants.EVENT_TYPE, Constants.ERROR);
+        errorJson.put(Constants.ERROR_MESSAGE, e.getMessage());
+        List<String> stackTrace = new ArrayList<>();
+        for ( StackTraceElement element : e.getStackTrace() )
+            stackTrace.add(element.toString());
+
+        errorJson.put(Constants.ERROR_STACK_TRACE, stackTrace);
+        errorJson.put(Constants.ERROR_TYPE, e.getClass().getName());
+        returnJson.put(Constants.EVENT_PAYLOAD, errorJson);
+        _send(returnJson);
     }
 
     private void sendVMToFrontend(JSONObject json) {
@@ -94,9 +122,7 @@ public class BindingWebSocket {
                             BindingUtil.jsonFromProperty(delegate.getCurrent(), userContext)
                                     .put(Constants.VM_ID, vmId)
                     );
-                    String returnJson = update.toString();
-                    System.out.println("Sending property: " + returnJson);
-                    _send(returnJson);
+                    _send(update);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -104,7 +130,7 @@ public class BindingWebSocket {
             @Override public boolean canBeRemoved() { return !session.isOpen(); }
         });
         // Send a message to the client that sent the message
-        _send(vmJson.toString());
+        _send(vmJson);
     }
 
     private void applyMutationToVM(JSONObject json) {
@@ -115,14 +141,20 @@ public class BindingWebSocket {
         BindingUtil.applyToViewModelPropertyById(vm, propName, value);
     }
 
-    private void callMethodOnVM(JSONObject json) {
+    private void callMethodOnVM(JSONObject json)
+            throws
+            InvocationTargetException,
+            NoSuchMethodException,
+            IllegalAccessException,
+            ClassNotFoundException
+    {
         String vmId     = json.getString(Constants.VM_ID);
         var vm = userContext.get(vmId);
         var result = BindingUtil.callViewModelMethod(vm, json.getJSONObject(Constants.EVENT_PAYLOAD), userContext);
         JSONObject returnJson = new JSONObject();
         returnJson.put(Constants.EVENT_TYPE, Constants.CALL_RETURN);
         returnJson.put(Constants.EVENT_PAYLOAD, result.put(Constants.VM_ID, vmId));
-        _send(returnJson.toString());
+        _send(returnJson);
     }
 
 }

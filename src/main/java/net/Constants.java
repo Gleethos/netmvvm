@@ -12,6 +12,7 @@ public class Constants {
     public static String RETURN_GET_VM = "viewModel";
     public static String CALL          = "call";
     public static String CALL_RETURN   = "callReturn";
+    public static String ERROR         = "error";
 
 
     // View model properties:
@@ -20,6 +21,8 @@ public class Constants {
     public static String METHOD_NAME = "name";
     public static String METHOD_ARG_NAME = "name";
     public static String METHOD_ARG_TYPE = "type";
+    public static String TYPE_NAME = "type";
+    public static String TYPE_IS_VM = "viewable";
     public static String METHOD_ARGS = "args";
     public static String METHOD_RETURNS = "returns";
 
@@ -31,4 +34,9 @@ public class Constants {
     public static String PROP_TYPE = "type";
     public static String PROP_TYPE_NAME = "name";
     public static String PROP_TYPE_STATES = "states";
+
+    // Error properties:
+    public static String ERROR_MESSAGE = "message";
+    public static String ERROR_STACK_TRACE = "stackTrace";
+    public static String ERROR_TYPE = "type";
 }

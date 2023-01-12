@@ -10,6 +10,7 @@ import swingtree.api.mvvm.Var;
 import swingtree.api.mvvm.Viewable;
 
 import java.awt.*;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -167,7 +168,11 @@ public class BindingUtil {
         }
     }
 
-    public static JSONObject callViewModelMethod(Object vm, JSONObject methodCallData, UserContext userContext) {
+    public static JSONObject callViewModelMethod(
+            Object vm,
+            JSONObject methodCallData,
+            UserContext userContext
+    ) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, ClassNotFoundException {
         /*
             The call request should look like this:
             {
@@ -177,7 +182,9 @@ public class BindingUtil {
         */
         String methodName = methodCallData.getString(Constants.METHOD_NAME);
         var args = methodCallData.getJSONArray(Constants.METHOD_ARGS);
-        var methodArgs = new Object[args.length()];
+        var methodArgs     = new Object[args.length()];
+        var methodArgNames = new String[args.length()];
+        var methodArgTypes = new Class[args.length()];
         for (int i = 0; i < args.length(); i++) {
             var arg = args.getJSONObject(i);
             String argName = arg.getString(Constants.METHOD_ARG_NAME);
@@ -200,28 +207,29 @@ public class BindingUtil {
                 }
             }
             methodArgs[i] = argValue;
+            methodArgNames[i] = argName;
+            methodArgTypes[i] = Class.forName(argType);
         }
 
-        try {
-            Method method;
-            Object result;
-            if ( methodArgs.length == 0 ) {
-                method = vm.getClass().getMethod(methodName);
-                result = method.invoke(vm);
-            } else {
-                method = vm.getClass().getMethod(methodName, methodArgs[0].getClass());
-                result = method.invoke(vm, methodArgs[0]);
-            }
-            if ( result instanceof Val<?> property ) {
-                result = BindingUtil.jsonFromProperty(property, userContext);
-            }
-            return new JSONObject()
-                    .put(Constants.METHOD_NAME, methodName)
-                    .put(Constants.METHOD_RETURNS, result);
-        } catch (Exception e) {
-            e.printStackTrace();
+        Method method;
+        Object result;
+        if ( methodArgs.length == 0 ) {
+            method = vm.getClass().getMethod(methodName);
+            result = method.invoke(vm);
+        } else {
+            method = vm.getClass().getMethod(methodName, methodArgs[0].getClass());
+            result = method.invoke(vm, methodArgs[0]);
         }
-        return new JSONObject();
+        if ( result instanceof Val<?> property ) {
+            result = BindingUtil.jsonFromProperty(property, userContext);
+        }
+        if ( userContext.hasVM(result) ) {
+            result = userContext.vmIdOf(result).toString();
+        }
+
+        return new JSONObject()
+                .put(Constants.METHOD_NAME, methodName)
+                .put(Constants.METHOD_RETURNS, result);
     }
 
     public static void bind(
@@ -272,13 +280,18 @@ public class BindingUtil {
                 var args = new JSONObject();
                 for ( var param : method.getParameters() )
                     args.put(Constants.METHOD_ARG_NAME, param.getName())
-                            .put(Constants.METHOD_ARG_TYPE, param.getType().getSimpleName());
+                        .put(Constants.METHOD_ARG_TYPE, param.getType().getSimpleName())
+                        .put(Constants.TYPE_IS_VM, Viewable.class.isAssignableFrom(method.getReturnType()));
 
                 publicMethods.put(
                         new JSONObject()
                                 .put(Constants.METHOD_NAME, methodName)
                                 .put(Constants.METHOD_ARGS, args)
-                                .put(Constants.METHOD_RETURNS, returnType)
+                                .put(Constants.METHOD_RETURNS,
+                                    new JSONObject()
+                                        .put(Constants.TYPE_NAME, returnType)
+                                        .put(Constants.TYPE_IS_VM, Viewable.class.isAssignableFrom(method.getReturnType()))
+                                )
                 );
             } catch (Exception e) {
                 e.printStackTrace();
