@@ -102,14 +102,32 @@ public class UserRegistrationViewModel
         if ( validationMessage.isEmpty() ) {
             feedback.set("All inputs are valid, feel fre to press the submit button!");
             feedbackColor.set(Color.GREEN);
+            rebroadcast();
             return true;
         } else {
             feedback.set(validationMessage);
             feedbackColor.set(Color.RED);
+            rebroadcast();
             return false;
         }
     }
-    
+
+    private void rebroadcast() {
+        // We rebroadcast all properties:
+        username.show();
+        password.show();
+        email.show();
+        feedbackColor.show();
+        gender.show();
+        termsAccepted.show();
+        feedback.show();
+        /*
+            This method is COMPLETELY redundant when we have only one view.
+            But if we had multiple views, we would need to rebroadcast all properties
+            to all views, so that they can update their state.
+         */
+    }
+
     public void register() {
         if ( validateAll() ) {
             allInputsDisabled.set(true);
