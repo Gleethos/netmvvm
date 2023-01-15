@@ -3,6 +3,8 @@ package app;
 import com.formdev.flatlaf.FlatLightLaf;
 import swingtree.EventProcessor;
 import swingtree.UI;
+import swingtree.api.mvvm.Val;
+import swingtree.api.mvvm.Viewable;
 
 import javax.swing.*;
 import java.util.Objects;
@@ -70,6 +72,9 @@ public class UserRegistrationView extends JPanel
                 )
             )
             .add(GROW_X.and(SPAN), button("RESET").onClick( it -> vm.reset() ))
+            .add(GROW.and(SPAN).and(PUSH),
+                vm.userPageViewModel()
+            )
         );
     }
 

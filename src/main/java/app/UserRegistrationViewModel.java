@@ -16,6 +16,7 @@ public class UserRegistrationViewModel
     private final Var<Gender>  gender           ;
     private final Var<Boolean> termsAccepted    ;
     private final Var<Boolean> allInputsDisabled;
+    private final Var<UserPageViewModel> userPageViewModel; // Only exists if registration was successful
 
 
     public UserRegistrationViewModel() {
@@ -27,6 +28,7 @@ public class UserRegistrationViewModel
         this.feedback          = Var.of("").withId("feedback");
         this.feedbackColor     = Var.of(Color.BLACK).withId("feedbackColor");
         this.allInputsDisabled = Var.of(false).withId("allInputsDisabled");
+        this.userPageViewModel = Var.ofNullable(UserPageViewModel.class, null).withId("userPageViewModel");
         validateAll();
     }
 
@@ -46,6 +48,8 @@ public class UserRegistrationViewModel
     public Var<Boolean> termsAccepted() { return termsAccepted; }
     
     public Val<Boolean> allInputsDisabled() { return allInputsDisabled; }
+
+    public Val<UserPageViewModel> userPageViewModel() { return userPageViewModel; }
     
     private String validatePassword() {
         if ( password.get().length() < 8 )
@@ -135,10 +139,12 @@ public class UserRegistrationViewModel
             doRegistration();
             feedback.set("Registration successful!");
             feedbackColor.set(Color.GREEN);
+            userPageViewModel.set(new UserPageViewModel());
         } else {
             allInputsDisabled.set(false);
             feedback.set("Registration failed!");
             feedbackColor.set(Color.RED);
+            userPageViewModel.set(null);
         }
     }
     
@@ -168,6 +174,9 @@ public class UserRegistrationViewModel
         termsAccepted.set(false);
         gender.set(Gender.NOT_SELECTED);
         feedback.set("");
+        feedbackColor.set(Color.BLACK);
+        allInputsDisabled.set(false);
+        userPageViewModel.set(null);
         validateAll();
     }
 }

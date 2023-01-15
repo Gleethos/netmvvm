@@ -5,11 +5,10 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import swingtree.api.UIAction;
+import swingtree.api.mvvm.Action;
 import swingtree.api.mvvm.ValDelegate;
 
 import java.lang.reflect.InvocationTargetException;
@@ -112,7 +111,7 @@ public class BindingWebSocket {
         var vm = userContext.get(vmId);
         vmJson.put(Constants.EVENT_TYPE, Constants.RETURN_GET_VM);
         vmJson.put(Constants.EVENT_PAYLOAD, BindingUtil.toJson(vm, userContext));
-        BindingUtil.bind( vm, new UIAction<>() {
+        BindingUtil.bind( vm, new Action<ValDelegate<Object>>() {
             @Override
             public void accept(ValDelegate<Object> delegate) {
                 try {

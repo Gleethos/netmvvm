@@ -3,11 +3,7 @@ package net;
 import binding.UserContext;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import swingtree.api.UIAction;
-import swingtree.api.mvvm.Val;
-import swingtree.api.mvvm.ValDelegate;
-import swingtree.api.mvvm.Var;
-import swingtree.api.mvvm.Viewable;
+import swingtree.api.mvvm.*;
 
 import java.awt.*;
 import java.lang.reflect.InvocationTargetException;
@@ -234,7 +230,7 @@ public class BindingUtil {
 
     public static void bind(
             Object vm,
-            UIAction<ValDelegate<Object>> observer
+            Action<ValDelegate<Object>> observer
     ) {
         BindingUtil.findPropertiesInViewModel(vm).forEach(p -> p.onShow(observer) );
     }
