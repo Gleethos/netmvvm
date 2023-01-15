@@ -219,10 +219,6 @@ public class BindingUtil {
         if ( result instanceof Val<?> property ) {
             result = BindingUtil.jsonFromProperty(property, userContext);
         }
-        if ( userContext.hasVM(result) ) {
-            result = userContext.vmIdOf(result).toString();
-        }
-
         return new JSONObject()
                 .put(Constants.METHOD_NAME, methodName)
                 .put(Constants.METHOD_RETURNS, result);
@@ -263,8 +259,7 @@ public class BindingUtil {
                 "returns": "long"
             }
         */
-
-        for (var method : vm.getClass().getDeclaredMethods()) {
+        for ( var method : vm.getClass().getDeclaredMethods() ) {
             method.setAccessible(true);
             // first we check if the method is public
             if ( !java.lang.reflect.Modifier.isPublic(method.getModifiers()) )
@@ -297,14 +292,16 @@ public class BindingUtil {
     }
 
 
-    public static JSONObject jsonFromProperty(Val<?> property, UserContext userContext) {
+    public static JSONObject jsonFromProperty(
+        Val<?> property,
+        UserContext userContext
+    ) {
         Class<?> type = property.type();
         List<String> knownStates = new ArrayList<>();
         if ( Enum.class.isAssignableFrom(type) ) {
             for ( var state : type.getEnumConstants() )
                 knownStates.add(((Enum)state).name());
         }
-
         JSONObject json = new JSONObject();
         json.put(Constants.PROP_NAME, property.id());
         json.put(Constants.PROP_VALUE, toJsonCompatibleValueFromProperty(property, userContext));
@@ -312,13 +309,14 @@ public class BindingUtil {
             new JSONObject()
             .put(Constants.PROP_TYPE_NAME, type.getName())
             .put(Constants.PROP_TYPE_STATES, knownStates)
+            .put(Constants.TYPE_IS_VM, Viewable.class.isAssignableFrom(type))
         );
 
         return json;
     }
 
 
-    private static Object toJsonCompatibleValueFromProperty(Val<?> prop, UserContext userContext) {
+    private static Object toJsonCompatibleValueFromProperty( Val<?> prop, UserContext userContext ) {
 
         if ( prop.isEmpty() ) return null;
 
@@ -332,11 +330,10 @@ public class BindingUtil {
             return ((Enum)prop.get()).name();
         else if (Viewable.class.isAssignableFrom(prop.type())) {
             Viewable viewable = (Viewable) prop.get();
-            if ( userContext.hasVM(viewable) )
-                // We do not send the entire viewable object, but only the id
-                return userContext.vmIdOf(viewable).toString();
-            else
-                return String.valueOf(viewable);
+            if ( !userContext.hasVM(viewable) ) userContext.put(viewable);
+
+            // We do not send the entire viewable object, but only the id
+            return userContext.vmIdOf(viewable).toString();
         }
         else if ( prop.type() == Color.class ) {
             // In the frontend colors are usually hex strings

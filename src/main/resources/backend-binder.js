@@ -22,6 +22,7 @@ const METHOD_NAME = "name";
 const METHOD_ARG_NAME = "name";
 const METHOD_ARG_TYPE = "type";
 const TYPE_NAME = "type";
+const TYPE_IS_VM = "viewable";
 const METHOD_ARG_TYPE_IS_VM = "viewable";
 const METHOD_ARGS     = "args";
 const METHOD_RETURNS = "returns";
@@ -67,6 +68,7 @@ function Get(get) {
  *  it exposes the current state of the view model as
  *  well as a way to bind to its properties in both ways.
  *
+ * @param  session the session that this view model belongs to, this is used to load sub-view models
  * @param  vm the state of the view model (a json object)
  * @param  vmSet a function for setting a property of the view model
  * @param  vmObserve a function for registering property observers
@@ -75,6 +77,7 @@ function Get(get) {
  * @constructor
  */
 function VM(
+    session,   // For loading view models like this one
     vm,        // The current view model
     vmSet,     // Send a property change to the server, expects 2 arguments: propName, value
     vmObserve, // For binding to properties, expects 2 parameters: the property name and the action to call when the property changes
@@ -97,24 +100,47 @@ function VM(
         } else if ( method[METHOD_RETURNS][TYPE_NAME] === "Var" || method[METHOD_RETURNS][TYPE_NAME] === "Val" ) {
             this[method[METHOD_NAME]] = (...args)=>{
                 const propGet = (consumer) => {
-                                    vmCall(
-                                        method[METHOD_NAME],
-                                        args,
-                                        (property) => {
-                                            consumer(property[PROP_VALUE]);
-                                        }
-                                    );
-                                };
+                    vmCall(
+                        method[METHOD_NAME],
+                        args,
+                        (property) => {
+                            console.log("Got property: " + property);
+                            // If the property value is a view model, we need to load it:
+                            if ( property[PROP_TYPE][TYPE_IS_VM] ) {
+                                session.get(
+                                    property[PROP_VALUE],
+                                    (vm) => consumer(vm) // Here we expect a VM object where the user can bind to...
+                                );
+                            }
+                            else
+                                consumer(property[PROP_VALUE]); // This is a primitive value, we can just pass it on...
+                        }
+                    );
+                };
 
                 const propObserve = (consumer) => {
-                                        vmCall(
-                                            method[METHOD_NAME],
-                                            args,
-                                            (property) => {
-                                                vmObserve(property[PROP_NAME], consumer);
-                                            }
-                                        );
-                                    };
+                    vmCall(
+                        method[METHOD_NAME],
+                        args,
+                        (property) => {
+                            vmObserve(property[PROP_NAME], p => {
+                                // If the property value is a view model, we need to load it:
+                                if ( p[PROP_TYPE][TYPE_IS_VM] ) {
+                                    session.get(
+                                        p[PROP_VALUE],
+                                        (vm) => {
+                                            // Here we expect a VM object!
+                                            consumer(vm);
+                                            // The user can call methods on the VM object...
+                                        }
+                                    );
+                                }
+                                else
+                                    consumer(p[PROP_VALUE]) // Here we expect a primitive value!
+                            });
+                        }
+                    );
+                };
 
                 const propSet = (newValue) => {
                     vmCall(
@@ -195,6 +221,10 @@ function start(serverAddress, iniViewModelId, frontend) {
     const propertyObservers = {};
     const viewModelObservers = {};
     const methodObservers = {};
+    const session = new Session((vmId, action) => {
+                            viewModelObservers[vmId] = action;
+                            sendVMRequest(vmId);
+                        });
 
     function startWebsocket(action) {
         ws = new WebSocket(serverAddress)
@@ -205,14 +235,17 @@ function start(serverAddress, iniViewModelId, frontend) {
             setTimeout(() => startWebsocket( ()=>{} ), 5000);
         }
         ws.onmessage = (event) => {
-            console.log('Message from server: ' + event.data);
+            //console.log('Message from server: ' + event.data);
             // We parse the data as json:
             processResponse(JSON.parse(event.data));
         };
     }
     startWebsocket( () => sendVMRequest(iniViewModelId) );
 
-    function send(message) {
+    function send(data) {
+        // First up: If the message is a JSON we turn it into a string:
+        const message = typeof data === "string" ? data : JSON.stringify(data);
+
         if ( ws ) {
             // The web socket might be closed, if so we reopen it
             // and send the message when it is open again:
@@ -220,7 +253,7 @@ function start(serverAddress, iniViewModelId, frontend) {
                 startWebsocket(() => { send(message); });
                 return;
             }
-            ws.send(JSON.stringify(message));
+            ws.send(message);
         }
         else {
             console.log("Websocket missing! Failed to send message '" + message + "'. Retrying in 100ms.");
@@ -229,7 +262,10 @@ function start(serverAddress, iniViewModelId, frontend) {
         }
     }
 
-    function sendVMRequest(vmId) { send({[EVENT_TYPE]: GET_VM, [VM_ID]: vmId}); }
+    function sendVMRequest(vmId) {
+        console.log("Requesting view model: " + vmId);
+        send({[EVENT_TYPE]: GET_VM, [VM_ID]: vmId});
+    }
 
     function processResponse(data) {
         // Now let's check the EventType: either a view model or a property change...
@@ -238,46 +274,46 @@ function start(serverAddress, iniViewModelId, frontend) {
             const viewModel = data[EVENT_PAYLOAD];
             const vmId = viewModel[VM_ID];
 
+            const vm = new VM(
+                session,
+                viewModel,
+                (propName, value) => {
+                    send({
+                        [EVENT_TYPE]: SET_PROP,
+                        [VM_ID]: vmId,
+                        [PROP_NAME]: propName,
+                        [PROP_VALUE]: value,
+                    });
+                },
+                (propName, action) => {
+                    propertyObservers[vmId + ":" + propName] = action;
+                },
+                (methodName, args, action) => {
+                    let key = vmId + ":" + methodName;
+                    if ( !methodObservers[key] ) methodObservers[key] = [];
+                    methodObservers[key].push(action);
+                    send({
+                        [EVENT_TYPE]: CALL,
+                        [EVENT_PAYLOAD]: {
+                            [METHOD_NAME]: methodName,
+                            [METHOD_ARGS]: args
+                        },
+                        [VM_ID]: vmId
+                    });
+                }
+            );
+
             if ( viewModelObservers[vmId] ) {
-                viewModelObservers[vmId](viewModel);
+                viewModelObservers[vmId](vm);
                 return;
             }
-            const vm = new VM(
-                            viewModel,
-                            (propName, value) => {
-                                send({
-                                        [EVENT_TYPE]: SET_PROP,
-                                        [VM_ID]: vmId,
-                                        [PROP_NAME]: propName,
-                                        [PROP_VALUE]: value,
-                                    });
-                            },
-                            (propName, action) => {
-                                propertyObservers[vmId + ":" + propName] = action;
-                            },
-                            (methodName, args, action) => {
-                                let key = vmId + ":" + methodName;
-                                if ( !methodObservers[key] ) methodObservers[key] = [];
-                                methodObservers[key].push(action);
-                                send({
-                                        [EVENT_TYPE]: CALL,
-                                        [EVENT_PAYLOAD]: {
-                                            [METHOD_NAME]: methodName,
-                                            [METHOD_ARGS]: args
-                                        },
-                                        [VM_ID]: vmId
-                                    });
-                            }
-                        );
-
-            const session = new Session((vmId, action) => { viewModelObservers[vmId] = action; });
             frontend(session,vm);
         } else if (data[EVENT_TYPE] === RETURN_PROP) {
             // We look up the binding for the property change:
             const action = propertyObservers[data[EVENT_PAYLOAD][VM_ID] + ":" + data[EVENT_PAYLOAD][PROP_NAME]];
             // If we have a binding, we call it with the new value:
             if (action)
-                action(data[EVENT_PAYLOAD][PROP_VALUE]);
+                action(data[EVENT_PAYLOAD]);
             else
                 console.log("No action for property observation event: " + JSON.stringify(data));
         } else if (data[EVENT_TYPE] === CALL_RETURN) {
