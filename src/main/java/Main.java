@@ -1,3 +1,4 @@
+import app.UserRegistrationView;
 import app.UserRegistrationViewModel;
 import binding.UserContext;
 import net.WebSocketEndpoint;
@@ -6,6 +7,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import swingtree.UI;
 
 public class Main {
 
@@ -35,6 +37,7 @@ public class Main {
 
         try {
             server.start();
+            UI.show(new UserRegistrationView(vm));
             server.join();
         } catch (Throwable t) {
             t.printStackTrace(System.err);
