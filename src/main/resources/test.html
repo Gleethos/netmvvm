@@ -1,29 +1,60 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en">    <!-----------------------------------BOOTSTRAP------------------------------------------>
+<link rel="stylesheet" href="css/bootstrap.min.css">
+<script src="js/bootstrap.min.js"></script>
+<script src="js/popper.min.js"></script>
+<style>
+    input {
+        margin:0.5em;
+        height: 25px;
+    }
+    select {
+        margin: 0.5em;
+        height: 25px;
+    }
+    textarea {
+        margin:0.5em;
+        width:100%;
+    }
+    label {
+        min-width: 4.5em;
+    }
+</style>
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
 </head>
 <body>
-    <h1>Registration</h1>
-    <div>
-        <label for="username-id">User</label><input id="username-id" type="text" placeholder="Username">
-        <label for="password-id">Password</label><input id="password-id" type="password" placeholder="Password">
+<div class="container-fluid">
+    <div class="row">
+        <h1>Registration</h1>
+        <div class="col-6">
+            <label for="username-id">User</label><input id="username-id" type="text" placeholder="Username">
+        </div>
+        <div class="col-6">
+            <label for="password-id">Password</label><input id="password-id" type="password" placeholder="Password">
+        </div>
+        <div class="col-6">
+            <label for="email-id">Email</label><input id="email-id" type="email" placeholder="Email">
+        </div>
+        <div class="col-6">
+            <label for="gender-id">Gender</label><select id="gender-id"></select>
+        </div>
+        <div class="col-6">
+            <label for="terms-id">I agree to the terms of service:</label><input id="terms-id" type="checkbox">
+        </div>
+        <div class="col-6">
+            <button id="register-id">Register</button>
+        </div>
+        <div class="col-12">
+            <label id="feedback-id" style="width:90%;margin: 1em; padding:1em; border: 1px solid black;">?</label>
+        </div>
     </div>
-    <div>
-        <label for="email-id"></label>Email<input id="email-id" type="email" placeholder="Email">
-        <label for="gender-id">Gender</label><select id="gender-id"></select>
+    <br>
+    <div class="row">
+        <div id="user-page-id"  class="col-12"></div>
     </div>
-    <div>
-        <label for="terms-id">I agree to the terms of service:</label><input id="terms-id" type="checkbox">
-    </div>
-    <div>
-        <label id="feedback-id">?</label>
-    </div>
-    <div>
-        <button id="register-id">Register</button>
-    </div>
-    <div id="user-page-id"></div>
+</div>
 </body>
 <script src="backend-binder.js"></script>
 <script>
@@ -80,6 +111,7 @@
             const userPage = document.getElementById("user-page-id");
             vm.userPageViewModel().get( userVM => {
                 if ( userVM ) {
+                    userPage.innerHTML = "<br><label>Edit your user data:</label><br>";
                     console.log("userPageViewModel: " + userVM);
                     // We want to show location, website link, bio and a save button
                     const location = document.createElement("input");
@@ -92,6 +124,8 @@
                     userVM.website().get(v => website.value = v);
                     website.onkeyup = (event) => userVM.website().set(event.target.value);
                     userPage.appendChild(website);
+                    // We add a break
+                    userPage.appendChild(document.createElement("br"));
                     const bio = document.createElement("textarea");
                     userVM.bio().get(v => bio.value = v);
                     bio.onkeyup = (event) => userVM.bio().set(event.target.value);
